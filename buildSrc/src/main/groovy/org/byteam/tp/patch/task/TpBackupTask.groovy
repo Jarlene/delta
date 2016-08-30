@@ -2,7 +2,6 @@ package org.byteam.tp.patch.task
 
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.pipeline.TransformTask
-import com.android.build.gradle.internal.transforms.DexTransform
 import com.android.build.gradle.internal.transforms.ProGuardTransform
 import org.apache.commons.io.FileUtils
 import org.byteam.tp.patch.TpPlugin
@@ -11,7 +10,6 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-
 /**
  * Backup original files.
  *
@@ -24,13 +22,11 @@ class TpBackupTask extends DefaultTask {
     Patch mPatch
 
     @Input
-    boolean minifyEnabled
-
-    @Input
     ApplicationVariant mVariant
 
     @TaskAction
     void backupPatch() {
+        FileUtils.cleanDirectory(new File(mPatch.originalPath))
         saveMapping()
         handleDexTask()
     }
@@ -39,7 +35,7 @@ class TpBackupTask extends DefaultTask {
      * Save mapping.txt
      */
     private void saveMapping() {
-        if (minifyEnabled) {
+        if (mVariant.buildType.minifyEnabled) {
             String transformClassesAndResourcesWithProguardForVariant = "transformClassesAndResourcesWithProguardFor${mVariant.name.capitalize()}"
             def proguardTask = project.tasks.findByName(transformClassesAndResourcesWithProguardForVariant) as TransformTask
             if (proguardTask) {
@@ -58,7 +54,7 @@ class TpBackupTask extends DefaultTask {
         String transformClassesWithDexForVariant = "transformClassesWithDexFor${mVariant.name.capitalize()}"
         def dexTask = project.tasks.findByName(transformClassesWithDexForVariant) as TransformTask
         if (dexTask) {
-            copyAllDexToPatch(project, mPatch, dexTask.transform)
+            copyAllDexToPatch(project, mPatch)
         } else {
             println("Task:${transformClassesWithDexForVariant} not found.")
         }
@@ -67,8 +63,8 @@ class TpBackupTask extends DefaultTask {
     /**
      * 将dex拷贝到patch目录下。
      */
-    private void copyAllDexToPatch(Project project, Patch patch, DexTransform dexTransform) {
-        File dexDir = TpPlugin.getDexFolder(project, patch, dexTransform)
+    private void copyAllDexToPatch(Project project, Patch patch) {
+        File dexDir = TpPlugin.getDexFolder(project, patch)
         if (!dexDir.exists()) {
             throw new IllegalArgumentException(String.format("Can't find dex directory: %s", dexDir.absolutePath))
         }

@@ -1,4 +1,4 @@
-package org.byteam.tp.patch.constant;
+package org.byteam.tp.patch.extension;
 
 /**
  * Extension的默认值
@@ -8,5 +8,5 @@ package org.byteam.tp.patch.constant;
  */
 class ExtConsts {
     static final def EXTENSION_NAME = 'tp'
-    static final def DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX = 50000
+    static final def DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX = 0xFF00 // 65280
 }

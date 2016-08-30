@@ -1,7 +1,4 @@
-package org.byteam.tp.patch
-
-import org.byteam.tp.patch.constant.ExtConsts
-
+package org.byteam.tp.patch.extension
 /**
  * @Author: chenenyu
  * @Created: 16/8/18 18:06.

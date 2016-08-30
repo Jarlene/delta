@@ -7,13 +7,18 @@ import com.android.build.gradle.internal.transforms.DexTransform
 import com.android.builder.core.DefaultDexOptions
 import com.google.common.base.Joiner
 import org.byteam.tp.patch.bean.Patch
-import org.byteam.tp.patch.constant.ExtConsts
-import org.byteam.tp.patch.constant.TaskConsts
+import org.byteam.tp.patch.extension.ExtConsts
+import org.byteam.tp.patch.extension.TpExtension
+import org.byteam.tp.patch.task.TaskConsts
 import org.byteam.tp.patch.task.TpBackupTask
+import org.byteam.tp.patch.task.TpPatchTask
+import org.byteam.tp.patch.task.TpPrePatchTask
 import org.byteam.tp.patch.util.ReflectionUtils
+import org.byteam.tp.patch.util.TaskUtils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 
 /**
  * @Author: chenenyu
@@ -48,17 +53,6 @@ class TpPlugin implements Plugin<Project> {
                 Patch patch = new Patch(project.projectDir.getAbsolutePath(), versionCode + "",
                         variant.flavorName, variant.buildType.name)
 
-                boolean minifyEnabled = variant.buildType.minifyEnabled
-
-                // task: tpBackupDebug
-                project.task(type: TpBackupTask, overwrite: true, TaskConsts.TP_BACKUP.concat(variant.name.capitalize())) { TpBackupTask task ->
-                    task.group = 'tp'
-                    task.description = "Backup all dex for ${variant.name}"
-                    task.dependsOn project.tasks.findByName("assemble${variant.name.capitalize()}")
-                    task.mPatch = patch
-                    task.minifyEnabled = minifyEnabled
-                    task.mVariant = variant
-                }
 
                 String transformClassesWithMultidexlistForVariant = "transformClassesWithMultidexlistFor${variant.name.capitalize()}"
                 def multidexlistTask = project.tasks.findByName(transformClassesWithMultidexlistForVariant)
@@ -71,7 +65,7 @@ class TpPlugin implements Plugin<Project> {
                 }
 
                 // dex task
-                String transformClassesWithDexForVariant = "transformClassesWithDexFor${variant.name.capitalize()}"
+                String transformClassesWithDexForVariant = TaskUtils.getTransformDex(variant)
                 def dexTask = project.tasks.findByName(transformClassesWithDexForVariant) as TransformTask
                 if (dexTask) {
                     setMaxNumberOfIdxPerDex(dexTask.transform as DexTransform, extension)
@@ -79,7 +73,44 @@ class TpPlugin implements Plugin<Project> {
                     println("Task:${transformClassesWithDexForVariant} not found.")
                 }
 
-                // todo
+                String assembleVariant = TaskUtils.getAssemble(variant)
+                Task assembleTask = project.tasks.findByName(assembleVariant)
+                if (assembleTask) {
+                    project.task(type: TpBackupTask, overwrite: true,
+                            TaskConsts.TP_BACKUP.concat(variant.name.capitalize())) { TpBackupTask task ->
+                        task.group = TaskConsts.GROUP
+                        task.description = "Backup all required files for ${variant.name}"
+                        task.mPatch = patch
+                        task.mVariant = variant
+                        task.dependsOn assembleTask
+                    }
+
+                    Task cleanTask = project.tasks.findByName("clean")
+                    if (cleanTask) {
+                        Task prePatchTask = project.task(type: TpPrePatchTask, overwrite: true,
+                                TaskConsts.TP_PRE_PATCH.concat(variant.name.capitalize())) { TpPrePatchTask task ->
+                            task.group = TaskConsts.GROUP
+                            task.description = "Clean project and apply mapping for ${variant.name}"
+                            task.mPatch = patch
+                            task.mVariant = variant
+                            task.dependsOn cleanTask
+                        }
+
+                        project.task(type: TpPatchTask, overwrite: true,
+                                TaskConsts.TP_PATCH.concat(variant.name.capitalize())) { TpPatchTask task ->
+                            task.group = TaskConsts.GROUP
+                            task.description = "Generates patchs for ${variant.name}"
+                            task.mPatch = patch
+                            task.dependsOn prePatchTask, assembleTask
+                            assembleTask.mustRunAfter prePatchTask
+                        }
+                    } else {
+                        println("Can not find task: clean")
+                    }
+                } else {
+                    println("Can not find task: ${assembleVariant}")
+                }
+
             }
         }
     }
@@ -87,7 +118,7 @@ class TpPlugin implements Plugin<Project> {
     /**
      * 指定每个dex的最大方法数。
      */
-    static void setMaxNumberOfIdxPerDex(DexTransform dexTransform, TpExtension extension) {
+    private void setMaxNumberOfIdxPerDex(DexTransform dexTransform, TpExtension extension) {
         DefaultDexOptions dexOptions = ReflectionUtils.getField(dexTransform, dexTransform.class, "dexOptions")
         List<String> additionalParameters = dexOptions.additionalParameters
         if (additionalParameters == null) {
@@ -107,12 +138,12 @@ class TpPlugin implements Plugin<Project> {
     /**
      * 获取生成dex的目录。
      */
-    static File getDexFolder(Project project, Patch patch, DexTransform dexTransform) {
+    static File getDexFolder(Project project, Patch patch) {
         List<String> dirs = []
         dirs.add(project.buildDir)
         dirs.add('intermediates')
         dirs.add('transforms')
-        dirs.add(dexTransform.name) // dex
+        dirs.add('dex')
         if (patch.flavorName)
             dirs.add(patch.flavorName)
         dirs.add(patch.buildTypeName)
