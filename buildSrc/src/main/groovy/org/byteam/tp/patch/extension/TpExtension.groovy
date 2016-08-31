@@ -18,4 +18,9 @@ class TpExtension {
      * 每个dex包含的方法数上限.
      */
     int maxNumberOfIdxPerDex = ExtConsts.DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX
+
+    /**
+     * 生成patch后自动拷贝到assets目录下
+     */
+    boolean autoPushPatchToAssets
 }

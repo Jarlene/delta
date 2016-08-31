@@ -37,11 +37,11 @@ class TpPlugin implements Plugin<Project> {
 
         project.afterEvaluate {
             // Test code. 查看dex相关的tasks
-            project.tasks.matching {
-                it.name.contains('dex') || it.name.contains('Dex')
-            }.each {
-                println("------${it.name}")
-            }
+//            project.tasks.matching {
+//                it.name.contains('dex') || it.name.contains('Dex')
+//            }.each {
+//                println("------${it.name}")
+//            }
 
             if (!extension.enable) {
                 return
@@ -101,6 +101,8 @@ class TpPlugin implements Plugin<Project> {
                             task.group = TaskConsts.GROUP
                             task.description = "Generates patchs for ${variant.name}"
                             task.mPatch = patch
+                            task.mVariant = variant
+                            task.pushPatchToAssets = extension.autoPushPatchToAssets
                             task.dependsOn prePatchTask, assembleTask
                             assembleTask.mustRunAfter prePatchTask
                         }
