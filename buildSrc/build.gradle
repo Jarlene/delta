@@ -18,7 +18,7 @@ configurations {
     provided
     compile.extendsFrom provided
 }
-//
+
 //sourceSets {
 //    main {
 //        compileClasspath += configurations.provided
@@ -28,7 +28,5 @@ configurations {
 dependencies {
     compile localGroovy()
     compile gradleApi()
-//    compile 'com.android.tools.build:builder:2.2.0-beta2'
-//    compile 'com.android.tools.build:gradle-core:2.2.0-beta2'
-    provided 'com.android.tools.build:gradle:2.2.0-beta3'
+    compile 'com.android.tools.build:gradle:2.1.3'
 }
