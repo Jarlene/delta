@@ -26,7 +26,10 @@ class TpBackupTask extends DefaultTask {
 
     @TaskAction
     void backupPatch() {
-        FileUtils.cleanDirectory(new File(mPatch.originalPath))
+        File originalDir = new File(mPatch.originalPath)
+        originalDir.mkdirs()
+        FileUtils.cleanDirectory(originalDir)
+
         saveMapping()
         handleDexTask()
     }
