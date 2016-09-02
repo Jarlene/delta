@@ -34,7 +34,7 @@
 #define N_BUF 1000000
 char buf[N_BUF];
 
-int main(int argc, char **argv) {
+int spewGmain(int argc, char **argv) {
     int ii, kk, p;
     srandom(1);
     setbuffer(stdout, buf, N_BUF);

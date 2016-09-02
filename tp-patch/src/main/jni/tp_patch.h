@@ -14,6 +14,10 @@ JNIEXPORT jint JNICALL
         Java_org_byteam_tp_patch_TpPatch_patch(JNIEnv *env, jclass type, jstring oldPath_,
                                                jstring newPath_, jstring patchPath_);
 
+JNIEXPORT jint JNICALL
+        Java_org_byteam_tp_patch_TpPatch_diff(JNIEnv *env, jclass type, jstring oldPath_,
+                                              jstring newPath_, jstring patchPath_);
+
 #ifdef __cplusplus
 }
 #endif

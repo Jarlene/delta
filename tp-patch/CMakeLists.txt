@@ -1,22 +1,21 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 set(SOURCE_FILES
-    src/main/cpp/tp_patch.h
-    src/main/cpp/tp_patch.c
-    src/main/cpp/bspatch.c
-    src/main/cpp/bzip2/blocksort.c
-    src/main/cpp/bzip2/bzip2.c
-    src/main/cpp/bzip2/bzip2recover.c
-    src/main/cpp/bzip2/bzlib.c
-    src/main/cpp/bzip2/bzlib_private.h
-    src/main/cpp/bzip2/compress.c
-    src/main/cpp/bzip2/crctable.c
-    src/main/cpp/bzip2/decompress.c
-    src/main/cpp/bzip2/huffman.c
-    src/main/cpp/bzip2/mk251.c
-    src/main/cpp/bzip2/randtable.c
-    src/main/cpp/bzip2/spewG.c
-    src/main/cpp/bzip2/unzcrash.c
+    src/main/jni/tp_patch.c
+    src/main/jni/bsdiff.c
+    src/main/jni/bspatch.c
+    src/main/jni/bzip2/blocksort.c
+    src/main/jni/bzip2/bzip2.c
+    src/main/jni/bzip2/bzip2recover.c
+    src/main/jni/bzip2/bzlib.c
+    src/main/jni/bzip2/compress.c
+    src/main/jni/bzip2/crctable.c
+    src/main/jni/bzip2/decompress.c
+    src/main/jni/bzip2/huffman.c
+    src/main/jni/bzip2/mk251.c
+    src/main/jni/bzip2/randtable.c
+    src/main/jni/bzip2/spewG.c
+    src/main/jni/bzip2/unzcrash.c
 )
 
 # Creates and names a library, sets it as either STATIC
@@ -25,7 +24,7 @@ set(SOURCE_FILES
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-             tp-patch
+             tp
 
              # Sets the library as a shared library.
              SHARED
@@ -52,9 +51,5 @@ find_library( # Sets the name of the path variable.
 # can link multiple libraries, such as libraries you define in the
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_link_libraries( # Specifies the target library.
-                       tp-patch
-
-                       # Links the target library to the log library
-                       # included in the NDK.
-                       ${log-lib} )
+# If use android/log, uncomment below line.
+# target_link_libraries( tp-patch ${log-lib} )
