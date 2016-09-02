@@ -3,7 +3,6 @@ package org.byteam.tp;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.content.res.AssetManager;
 import android.os.Build;
 import android.util.Log;
 
@@ -12,10 +11,7 @@ import org.byteam.tp.util.IOUtils;
 import org.byteam.tp.util.ReflectionUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -60,37 +56,19 @@ public class Tp {
     }
 
     /**
-     * 从assets中合并patch,便于测试.
+     * 从手机rom中合并patch,一般用于测试.
      *
      * @param context Context
      */
-    public static void applyPatchFromAssets(Context context) {
-        String patchDirInAssets = "patch";
-        AssetManager assetManager = context.getAssets();
-        InputStream is = null;
-        OutputStream os = null;
-        try {
-            String[] dexes = assetManager.list(patchDirInAssets);
-            if (dexes.length > 0) {
-                File tmpPatchDir = new File(context.getCacheDir(), "tp_tmp_patch");
-                mkdirChecked(tmpPatchDir);
-                IOUtils.cleanDirectory(tmpPatchDir);
-                for (String dex : dexes) {
-                    File destFile = new File(tmpPatchDir, dex);
-                    is = assetManager.open(patchDirInAssets + "/" + dex);
-                    os = new FileOutputStream(destFile);
-                    IOUtils.copy(is, os);
-
-                    applyPatch(context, destFile);
-                }
+    public static void applyPatchFromDevice(Context context) {
+        File[] patches = new File("/data/local/tmp/tp").listFiles();
+        if (patches != null && patches.length > 0) {
+            for (File patch : patches) {
+                applyPatch(context, patch);
             }
-        } catch (IOException e) {
-            Log.e(TAG, "Can not find patches from assets. ", e);
-        } finally {
-            IOUtils.closeQuietly(os);
-            IOUtils.closeQuietly(is);
+        } else {
+            Log.w(TAG, "Found no patches.");
         }
-
     }
 
     /**
@@ -176,7 +154,7 @@ public class Tp {
         initDir(context);
         File[] patchedDex = mPatchedDexDir.listFiles();
         if (patchedDex == null || patchedDex.length < 1) {
-            Log.i(TAG, "Null patched dex");
+            Log.i(TAG, "No patched dex.");
             return;
         }
 
@@ -232,7 +210,6 @@ public class Tp {
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Tp installation failure", e);
             throw new RuntimeException("Tp installation failed (" + e.getMessage() + ").");
         }
         Log.i(TAG, "install done");
@@ -309,11 +286,28 @@ public class Tp {
         }
     }
 
+    /**
+     * Install patched dex.
+     *
+     * @param loader current classloader.
+     * @param dexDir optimized directory.
+     * @param files  patched dex.
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws NoSuchFieldException
+     * @throws InvocationTargetException
+     * @throws NoSuchMethodException
+     * @throws IOException
+     */
     private static void installAllPatchedDexes(ClassLoader loader, File dexDir, List<File> files)
             throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException,
             InvocationTargetException, NoSuchMethodException, IOException {
         if (!files.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= 19) {
+            if (Build.VERSION.SDK_INT >= 24) {
+                V24.install(loader, files, dexDir);
+            } else if (Build.VERSION.SDK_INT >= 23) {
+                V23.install(loader, files, dexDir);
+            } else if (Build.VERSION.SDK_INT >= 19) {
                 V19.install(loader, files, dexDir);
             } else if (Build.VERSION.SDK_INT >= 14) {
                 V14.install(loader, files, dexDir);
@@ -324,7 +318,133 @@ public class Tp {
     }
 
     /**
-     * Installer for platform versions 19.
+     * Installer for platform versions 24.
+     */
+    private static final class V24 {
+
+        private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
+                                    File optimizedDirectory)
+                throws IllegalArgumentException, IllegalAccessException,
+                NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
+            /* The patched class loader is expected to be a descendant of
+             * dalvik.system.BaseDexClassLoader. We modify its
+             * dalvik.system.DexPathList pathList field to append additional DEX
+             * file entries.
+             */
+            Field pathListField = findField(loader, "pathList");
+            Object dexPathList = pathListField.get(loader);
+            ArrayList<IOException> suppressedExceptions = new ArrayList<>();
+            injectPatchDexAtFirst(dexPathList, "dexElements", makeDexElements(dexPathList,
+                    new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
+                    suppressedExceptions, loader));
+            if (suppressedExceptions.size() > 0) {
+                for (IOException e : suppressedExceptions) {
+                    Log.w(TAG, "Exception in makeDexElement", e);
+                }
+                Field suppressedExceptionsField =
+                        findField(dexPathList, "dexElementsSuppressedExceptions");
+                IOException[] dexElementsSuppressedExceptions =
+                        (IOException[]) suppressedExceptionsField.get(dexPathList);
+
+                if (dexElementsSuppressedExceptions == null) {
+                    dexElementsSuppressedExceptions =
+                            suppressedExceptions.toArray(
+                                    new IOException[suppressedExceptions.size()]);
+                } else {
+                    IOException[] combined = new IOException[suppressedExceptions.size() +
+                            dexElementsSuppressedExceptions.length];
+                    suppressedExceptions.toArray(combined);
+                    System.arraycopy(dexElementsSuppressedExceptions, 0, combined,
+                            suppressedExceptions.size(), dexElementsSuppressedExceptions.length);
+                    dexElementsSuppressedExceptions = combined;
+                }
+
+                suppressedExceptionsField.set(dexPathList, dexElementsSuppressedExceptions);
+            }
+        }
+
+        /**
+         * A wrapper around
+         * {@code private static final dalvik.system.DexPathList#makeDexElements}.
+         */
+        private static Object[] makeDexElements(
+                Object dexPathList, ArrayList<File> files, File optimizedDirectory,
+                ArrayList<IOException> suppressedExceptions, ClassLoader loader)
+                throws IllegalAccessException, InvocationTargetException,
+                NoSuchMethodException {
+            Method makeDexElements = ReflectionUtils.findMethod(dexPathList, "makeDexElements",
+                    ArrayList.class, File.class, ArrayList.class, ClassLoader.class);
+
+            return (Object[]) makeDexElements.invoke(dexPathList, files, optimizedDirectory,
+                    suppressedExceptions, loader);
+        }
+    }
+
+    /**
+     * Installer for platform versions 23.
+     */
+    private static final class V23 {
+
+        private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
+                                    File optimizedDirectory)
+                throws IllegalArgumentException, IllegalAccessException,
+                NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
+            /* The patched class loader is expected to be a descendant of
+             * dalvik.system.BaseDexClassLoader. We modify its
+             * dalvik.system.DexPathList pathList field to append additional DEX
+             * file entries.
+             */
+            Field pathListField = findField(loader, "pathList");
+            Object dexPathList = pathListField.get(loader);
+            ArrayList<IOException> suppressedExceptions = new ArrayList<>();
+            injectPatchDexAtFirst(dexPathList, "dexElements", makePathElements(dexPathList,
+                    new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
+                    suppressedExceptions));
+            if (suppressedExceptions.size() > 0) {
+                for (IOException e : suppressedExceptions) {
+                    Log.w(TAG, "Exception in makeDexElement", e);
+                }
+                Field suppressedExceptionsField =
+                        findField(dexPathList, "dexElementsSuppressedExceptions");
+                IOException[] dexElementsSuppressedExceptions =
+                        (IOException[]) suppressedExceptionsField.get(dexPathList);
+
+                if (dexElementsSuppressedExceptions == null) {
+                    dexElementsSuppressedExceptions =
+                            suppressedExceptions.toArray(
+                                    new IOException[suppressedExceptions.size()]);
+                } else {
+                    IOException[] combined = new IOException[suppressedExceptions.size() +
+                            dexElementsSuppressedExceptions.length];
+                    suppressedExceptions.toArray(combined);
+                    System.arraycopy(dexElementsSuppressedExceptions, 0, combined,
+                            suppressedExceptions.size(), dexElementsSuppressedExceptions.length);
+                    dexElementsSuppressedExceptions = combined;
+                }
+
+                suppressedExceptionsField.set(dexPathList, dexElementsSuppressedExceptions);
+            }
+        }
+
+        /**
+         * A wrapper around
+         * {@code private static final dalvik.system.DexPathList#makePathElements}.
+         */
+        private static Object[] makePathElements(
+                Object dexPathList, ArrayList<File> files, File optimizedDirectory,
+                ArrayList<IOException> suppressedExceptions)
+                throws IllegalAccessException, InvocationTargetException,
+                NoSuchMethodException {
+            Method makePathElements = ReflectionUtils.findMethod(dexPathList, "makePathElements",
+                    ArrayList.class, File.class, ArrayList.class);
+
+            return (Object[]) makePathElements.invoke(dexPathList, files, optimizedDirectory,
+                    suppressedExceptions);
+        }
+    }
+
+    /**
+     * Installer for platform versions 19 to 22.
      */
     private static final class V19 {
 
