@@ -4,7 +4,6 @@ import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.DexTransform
-import com.android.builder.core.DefaultDexOptions
 import com.google.common.base.Joiner
 import org.byteam.tp.patch.bean.Patch
 import org.byteam.tp.patch.extension.ExtConsts
@@ -13,7 +12,6 @@ import org.byteam.tp.patch.task.TaskConsts
 import org.byteam.tp.patch.task.TpBackupTask
 import org.byteam.tp.patch.task.TpPatchTask
 import org.byteam.tp.patch.task.TpPrePatchTask
-import org.byteam.tp.patch.util.ReflectionUtils
 import org.byteam.tp.patch.util.TaskUtils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -102,7 +100,7 @@ class TpPlugin implements Plugin<Project> {
                             task.description = "Generates patchs for ${variant.name}"
                             task.mPatch = patch
                             task.mVariant = variant
-                            task.pushPatchToAssets = extension.autoPushPatchToAssets
+                            task.pushPatchToDevice = extension.autoPushPatchToDevice
                             task.dependsOn prePatchTask, assembleTask
                             assembleTask.mustRunAfter prePatchTask
                         }
@@ -121,20 +119,21 @@ class TpPlugin implements Plugin<Project> {
      * 指定每个dex的最大方法数。
      */
     private void setMaxNumberOfIdxPerDex(DexTransform dexTransform, TpExtension extension) {
-        DefaultDexOptions dexOptions = ReflectionUtils.getField(dexTransform, dexTransform.class, "dexOptions")
-        List<String> additionalParameters = dexOptions.additionalParameters
-        if (additionalParameters == null) {
-            additionalParameters = []
-        }
-        String arg = '--set-max-idx-number='
-        if (extension.maxNumberOfIdxPerDex > 0 && extension.maxNumberOfIdxPerDex < 0xFFFF) {
-            arg = arg.concat("${extension.maxNumberOfIdxPerDex}")
-        } else {
-            arg = arg.concat(String.valueOf(ExtConsts.DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX))
-        }
-        additionalParameters << arg
-        dexOptions.additionalParameters = additionalParameters
-        ReflectionUtils.setField(dexTransform, dexTransform.class, "dexOptions", dexOptions)
+        // fixme 2.2.0以前的gradle-plugin没有DefaultDexOptions。
+//        DefaultDexOptions dexOptions = ReflectionUtils.getField(dexTransform, dexTransform.class, "dexOptions")
+//        List<String> additionalParameters = dexOptions.additionalParameters
+//        if (additionalParameters == null) {
+//            additionalParameters = []
+//        }
+//        String arg = '--set-max-idx-number='
+//        if (extension.maxNumberOfIdxPerDex > 0 && extension.maxNumberOfIdxPerDex < 0xFFFF) {
+//            arg = arg.concat("${extension.maxNumberOfIdxPerDex}")
+//        } else {
+//            arg = arg.concat(String.valueOf(ExtConsts.DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX))
+//        }
+//        additionalParameters << arg
+//        dexOptions.additionalParameters = additionalParameters
+//        ReflectionUtils.setField(dexTransform, dexTransform.class, "dexOptions", dexOptions)
     }
 
     /**

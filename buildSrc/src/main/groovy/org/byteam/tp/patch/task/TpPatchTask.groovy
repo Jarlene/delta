@@ -10,6 +10,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 
 import java.nio.charset.Charset
+
 /**
  * Generates patch.
  *
@@ -25,7 +26,7 @@ class TpPatchTask extends DefaultTask {
     ApplicationVariant mVariant
 
     @Input
-    boolean pushPatchToAssets
+    boolean pushPatchToDevice
 
     File mPatchDir
 
@@ -37,8 +38,8 @@ class TpPatchTask extends DefaultTask {
 
             executeDiff()
 
-            if (pushPatchToAssets) {
-                copyPatchToAssets()
+            if (pushPatchToDevice) {
+                copyPatchToDevice()
             }
         } else {
             println("There are no backup files for patch.")
@@ -80,19 +81,17 @@ class TpPatchTask extends DefaultTask {
         }
     }
 
-    private void copyPatchToAssets() {
-        mVariant.sourceSets.each { sourceSet ->
-            if ("main".equals(sourceSet.name)) {
-                sourceSet.assetsDirectories.each { assets ->
-                    File dexDirInAssets = new File(assets, "patch")
-                    dexDirInAssets.mkdirs()
-                    FileUtils.cleanDirectory(dexDirInAssets)
+    private void copyPatchToDevice() {
+        String adbPath = project.android.adbExe.absolutePath
+        Runtime.runtime.exec(
+                "${adbPath} shell;" +
+                        "su;" +
+                        "rm -rf /data/local/tmp/tp;" +
+                        "mkdir /data/local/tmp/tp;" +
+                        "exit;")
 
-                    mPatchDir.eachFileMatch(FileType.FILES, ~/.*\.dex/) { dex ->
-                        FileUtils.copyFileToDirectory(dex, dexDirInAssets)
-                    }
-                }
-            }
+        mPatchDir.eachFileMatch(FileType.FILES, ~/.*\.dex/) { dex ->
+            Runtime.runtime.exec("${adbPath} push ${dex.absolutePath} /data/local/tmp/tp/${dex.name}")
         }
     }
 
