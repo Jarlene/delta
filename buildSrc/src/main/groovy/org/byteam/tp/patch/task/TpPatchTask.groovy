@@ -84,7 +84,7 @@ class TpPatchTask extends DefaultTask {
         mVariant.sourceSets.each { sourceSet ->
             if ("main".equals(sourceSet.name)) {
                 sourceSet.assetsDirectories.each { assets ->
-                    File dexDirInAssets = new File(assets, "tp_patch")
+                    File dexDirInAssets = new File(assets, "patch")
                     dexDirInAssets.mkdirs()
                     FileUtils.cleanDirectory(dexDirInAssets)
 
