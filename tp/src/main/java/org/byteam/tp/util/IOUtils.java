@@ -1,5 +1,8 @@
 package org.byteam.tp.util;
 
+import android.util.Log;
+
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,12 +35,21 @@ public class IOUtils {
         return count;
     }
 
+    public static void closeQuietly(Closeable closeable) {
+        if (closeable == null) return;
+        try {
+            closeable.close();
+        } catch (IOException e) {
+            Log.w("IOUtils", "Failed to close resource.", e);
+        }
+    }
+
     /**
-     * 递归删除指定file.
+     * 删除文件或清空文件夹.
      *
      * @param file file or directory
      */
-    public static void deleteFiles(File file) {
+    public static void cleanDirectory(File file) {
         if (file == null || !file.exists()) {
             return;
         }
@@ -46,7 +58,7 @@ public class IOUtils {
         } else {
             File[] files = file.listFiles();
             for (File f : files) {
-                deleteFiles(f);
+                cleanDirectory(f);
             }
         }
     }
