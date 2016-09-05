@@ -78,12 +78,12 @@ public class ReflectionUtils {
      */
     public static void injectPatchDexAtFirst(Object instance, String fieldName, Object[] extraElements)
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
-        Field jlrField = findField(instance, fieldName);
-        Object[] original = (Object[]) jlrField.get(instance);
+        Field dexElements = findField(instance, fieldName);
+        Object[] original = (Object[]) dexElements.get(instance);
         Object[] combined = (Object[]) Array.newInstance(
                 original.getClass().getComponentType(), original.length + extraElements.length);
         System.arraycopy(extraElements, 0, combined, 0, extraElements.length);
         System.arraycopy(original, 0, combined, extraElements.length, original.length);
-        jlrField.set(instance, combined);
+        dexElements.set(instance, combined);
     }
 }

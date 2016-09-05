@@ -123,25 +123,6 @@ public class Tp {
     }
 
     /**
-     * 初始化存放补丁的文件夹
-     *
-     * @param context Context
-     */
-    private static void initDir(Context context) {
-        if (mApkDexDir == null)
-            mApkDexDir = new File(context.getFilesDir(), APK_DEX_DIR);
-        if (mPatchedDexDir == null)
-            mPatchedDexDir = new File(context.getFilesDir(), PATCHED_DEX_DIR);
-        try {
-            mkdirChecked(mApkDexDir);
-            IOUtils.cleanDirectory(mApkDexDir);
-            mkdirChecked(mPatchedDexDir);
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to create directory.", e);
-        }
-    }
-
-    /**
      * Patches the application context class loader by appending extra dex files
      * loaded from the application apk. This method should be called in the
      * attachBaseContext of your {@link Application}.
@@ -218,6 +199,25 @@ public class Tp {
     public static void clean(Context context) {
         initDir(context);
         IOUtils.cleanDirectory(mPatchedDexDir);
+    }
+
+    /**
+     * 初始化存放补丁的文件夹
+     *
+     * @param context Context
+     */
+    private static void initDir(Context context) {
+        if (mApkDexDir == null)
+            mApkDexDir = new File(context.getFilesDir(), APK_DEX_DIR);
+        if (mPatchedDexDir == null)
+            mPatchedDexDir = new File(context.getFilesDir(), PATCHED_DEX_DIR);
+        try {
+            mkdirChecked(mApkDexDir);
+            IOUtils.cleanDirectory(mApkDexDir);
+            mkdirChecked(mPatchedDexDir);
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to create directory.", e);
+        }
     }
 
     private static ApplicationInfo getApplicationInfo(Context context) {
