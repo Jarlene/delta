@@ -364,8 +364,10 @@ public class Tp {
         }
 
         /**
-         * A wrapper around
-         * {@code private static final dalvik.system.DexPathList#makeDexElements}.
+         * <strong><code>
+         * private static Element[] makeDexElements(List<File> files, File optimizedDirectory,
+         * List<IOException> suppressedExceptions, ClassLoader loader)
+         * </code></strong>
          */
         private static Object[] makeDexElements(
                 Object dexPathList, ArrayList<File> files, File optimizedDirectory,
@@ -373,7 +375,7 @@ public class Tp {
                 throws IllegalAccessException, InvocationTargetException,
                 NoSuchMethodException {
             Method makeDexElements = ReflectionUtils.findMethod(dexPathList, "makeDexElements",
-                    ArrayList.class, File.class, ArrayList.class, ClassLoader.class);
+                    List.class, File.class, List.class, ClassLoader.class);
 
             return (Object[]) makeDexElements.invoke(dexPathList, files, optimizedDirectory,
                     suppressedExceptions, loader);
@@ -436,7 +438,7 @@ public class Tp {
                 throws IllegalAccessException, InvocationTargetException,
                 NoSuchMethodException {
             Method makePathElements = ReflectionUtils.findMethod(dexPathList, "makePathElements",
-                    ArrayList.class, File.class, ArrayList.class);
+                    List.class, File.class, List.class);
 
             return (Object[]) makePathElements.invoke(dexPathList, files, optimizedDirectory,
                     suppressedExceptions);
@@ -499,7 +501,7 @@ public class Tp {
                 throws IllegalAccessException, InvocationTargetException,
                 NoSuchMethodException {
             Method makeDexElements = ReflectionUtils.findMethod(dexPathList, "makeDexElements",
-                    ArrayList.class, File.class, ArrayList.class);
+                    List.class, File.class, List.class);
 
             return (Object[]) makeDexElements.invoke(dexPathList, files, optimizedDirectory,
                     suppressedExceptions);
@@ -535,7 +537,7 @@ public class Tp {
                 throws IllegalAccessException, InvocationTargetException,
                 NoSuchMethodException {
             Method makeDexElements = ReflectionUtils.findMethod(dexPathList, "makeDexElements",
-                    ArrayList.class, File.class);
+                    List.class, File.class);
 
             return (Object[]) makeDexElements.invoke(dexPathList, files, optimizedDirectory);
         }
