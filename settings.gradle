@@ -1,1 +1,1 @@
-include ':app', ':tp', ':tp-patch', ':buildSrc'
+include ':app', ':tp', ':tp-bsdiff', ':buildSrc'
