@@ -5,6 +5,7 @@ import groovy.io.FileType
 import org.apache.commons.io.FileUtils
 import org.byteam.tp.patch.TpPlugin
 import org.byteam.tp.patch.bean.Patch
+import org.byteam.tp.patch.util.BsDiffUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
@@ -52,6 +53,9 @@ class TpPatchTask extends DefaultTask {
     }
 
     private void executeDiff() {
+        BsDiffUtils.copyBsDiff2BuildFolder(project)
+        String bsdiff = BsDiffUtils.getBsDiffFilePath(project)
+
         File[] originalAllDex = new File(mPatch.originalDexPath).listFiles()
         File dexDir = TpPlugin.getDexFolder(project, mPatch)
         dexDir.listFiles().each { dex ->
@@ -59,7 +63,7 @@ class TpPatchTask extends DefaultTask {
                 it.name.equals(dex.name)
             }
             if (originalDex) {
-                Process patch = new ProcessBuilder("bsdiff", originalDex.absolutePath, dex.absolutePath,
+                Process patch = new ProcessBuilder(bsdiff, originalDex.absolutePath, dex.absolutePath,
                         new File(mPatchDir, dex.name).absolutePath).redirectErrorStream(true).start()
                 BufferedReader br = new BufferedReader(new InputStreamReader(patch.getInputStream()))
                 StringBuilder consoleMsg = new StringBuilder()
@@ -90,7 +94,7 @@ class TpPatchTask extends DefaultTask {
                         "mkdir /data/local/tmp/tp;" +
                         "exit;")
 
-        mPatchDir.eachFileMatch(FileType.FILES, ~/.*\.dex/) { dex ->
+        mPatchDir.eachFileMatch(FileType.FILES, ~/.+\.dex/) { dex ->
             Runtime.runtime.exec("${adbPath} push ${dex.absolutePath} /data/local/tmp/tp/${dex.name}")
         }
     }
