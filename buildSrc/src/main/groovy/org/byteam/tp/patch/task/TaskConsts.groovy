@@ -9,9 +9,9 @@ package org.byteam.tp.patch.task;
 class TaskConsts {
     static final String GROUP = 'tp'
 
-    static final String TP_BACKUP = 'tpBackup'
+    static final String TP_BACKUP = 'backup'
 
-    static final String TP_PRE_PATCH = 'tpPrePatch'
+    static final String TP_PRE_PATCH = 'prePatch'
 
-    static final String TP_PATCH = 'tpPatch'
+    static final String TP_PATCH = 'patch'
 }

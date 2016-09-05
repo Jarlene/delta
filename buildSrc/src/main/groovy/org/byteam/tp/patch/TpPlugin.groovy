@@ -101,7 +101,8 @@ class TpPlugin implements Plugin<Project> {
                             task.mPatch = patch
                             task.mVariant = variant
                             task.pushPatchToDevice = extension.autoPushPatchToDevice
-                            task.dependsOn prePatchTask, assembleTask
+                            task.dependsOn prePatchTask
+                            task.dependsOn assembleTask
                             assembleTask.mustRunAfter prePatchTask
                         }
                     } else {
