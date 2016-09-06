@@ -8,6 +8,10 @@ package org.byteam.delta.patch;
  */
 public class DeltaPatch {
 
+    static {
+        System.loadLibrary("delta");
+    }
+
     private DeltaPatch() {
     }
 
