@@ -1,1 +1,1 @@
-include ':app', ':tp', ':tp-bsdiff', ':buildSrc'
+include ':app', ':delta', ':delta-patch', ':buildSrc'
