@@ -1,4 +1,4 @@
-package org.byteam.tp.patch
+package org.byteam.delta
 
 import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.api.ApplicationVariant
@@ -7,15 +7,15 @@ import com.android.build.gradle.internal.transforms.DexTransform
 import com.android.build.gradle.internal.transforms.ProGuardTransform
 import com.android.builder.Version
 import com.google.common.base.Joiner
-import org.byteam.tp.patch.bean.Patch
-import org.byteam.tp.patch.extension.ExtConsts
-import org.byteam.tp.patch.extension.TpExtension
-import org.byteam.tp.patch.task.TaskConsts
-import org.byteam.tp.patch.task.TpBackupTask
-import org.byteam.tp.patch.task.TpPatchTask
-import org.byteam.tp.patch.task.TpPrePatchTask
-import org.byteam.tp.patch.util.ReflectionUtils
-import org.byteam.tp.patch.util.TaskUtils
+import org.byteam.delta.bean.Patch
+import org.byteam.delta.extension.DeltaExtension
+import org.byteam.delta.extension.ExtConsts
+import org.byteam.delta.task.BackupTask
+import org.byteam.delta.task.PatchTask
+import org.byteam.delta.task.PrePatchTask
+import org.byteam.delta.task.TaskConsts
+import org.byteam.delta.util.ReflectionUtils
+import org.byteam.delta.util.TaskUtils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -25,7 +25,7 @@ import org.gradle.api.Task
  * @Author: chenenyu
  * @Created: 16/8/17 11:03.
  */
-class TpPlugin implements Plugin<Project> {
+class DeltaPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
@@ -34,7 +34,7 @@ class TpPlugin implements Plugin<Project> {
             throw new GradleException("'com.android.application' plugin required.")
         }
 
-        def extension = project.extensions.create(ExtConsts.EXTENSION_NAME, TpExtension)
+        def extension = project.extensions.create(ExtConsts.EXTENSION_NAME, DeltaExtension)
 
         project.afterEvaluate {
 
@@ -73,8 +73,8 @@ class TpPlugin implements Plugin<Project> {
                 } else { // Add pre-patch task to apply previous mapping.
                     Task cleanTask = project.tasks.findByName("clean")
                     if (cleanTask) {
-                        prePatchTask = project.task(type: TpPrePatchTask, overwrite: true,
-                                TaskConsts.TP_PRE_PATCH.concat(variant.name.capitalize())) { TpPrePatchTask task ->
+                        prePatchTask = project.task(type: PrePatchTask, overwrite: true,
+                                TaskConsts.PRE_PATCH.concat(variant.name.capitalize())) { PrePatchTask task ->
                             task.group = TaskConsts.GROUP
                             task.description = "Clean project and apply mapping for ${variant.name}"
                             task.mPatch = patch
@@ -89,8 +89,8 @@ class TpPlugin implements Plugin<Project> {
                 String assembleVariant = TaskUtils.getAssemble(variant)
                 Task assembleTask = project.tasks.findByName(assembleVariant)
                 if (assembleTask) {
-                    project.task(type: TpBackupTask, overwrite: true,
-                            TaskConsts.TP_BACKUP.concat(variant.name.capitalize())) { TpBackupTask task ->
+                    project.task(type: BackupTask, overwrite: true,
+                            TaskConsts.BACKUP.concat(variant.name.capitalize())) { BackupTask task ->
                         task.group = TaskConsts.GROUP
                         task.description = "Backup all required files for ${variant.name}"
                         task.mPatch = patch
@@ -98,8 +98,8 @@ class TpPlugin implements Plugin<Project> {
                         task.dependsOn assembleTask
                     }
 
-                    project.task(type: TpPatchTask, overwrite: true,
-                            TaskConsts.TP_PATCH.concat(variant.name.capitalize())) { TpPatchTask task ->
+                    project.task(type: PatchTask, overwrite: true,
+                            TaskConsts.PATCH.concat(variant.name.capitalize())) { PatchTask task ->
                         task.group = TaskConsts.GROUP
                         task.description = "Generates patchs for ${variant.name}"
                         task.mPatch = patch
@@ -122,7 +122,7 @@ class TpPlugin implements Plugin<Project> {
     /**
      * 指定每个dex的最大方法数。
      */
-    private void setMaxNumberOfIdxPerDex(DexTransform dexTransform, TpExtension extension) {
+    private void setMaxNumberOfIdxPerDex(DexTransform dexTransform, DeltaExtension extension) {
         if (isMajor2Minor2OrAboveVersion()) { // 2.2.x or above
             // DefaultDexOptions
             def dexOptions = ReflectionUtils.getField(dexTransform, dexTransform.class, "dexOptions")

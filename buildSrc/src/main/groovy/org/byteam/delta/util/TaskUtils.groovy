@@ -1,4 +1,4 @@
-package org.byteam.tp.patch.util
+package org.byteam.delta.util
 
 import com.android.build.gradle.api.BaseVariant
 

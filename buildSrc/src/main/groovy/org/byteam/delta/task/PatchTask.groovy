@@ -1,12 +1,12 @@
-package org.byteam.tp.patch.task
+package org.byteam.delta.task
 
 import com.android.build.gradle.api.ApplicationVariant
 import groovy.io.FileType
 import org.apache.commons.io.Charsets
 import org.apache.commons.io.FileUtils
-import org.byteam.tp.patch.TpPlugin
-import org.byteam.tp.patch.bean.Patch
-import org.byteam.tp.patch.util.BsDiffUtils
+import org.byteam.delta.DeltaPlugin
+import org.byteam.delta.bean.Patch
+import org.byteam.delta.util.BsDiffUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
@@ -17,7 +17,7 @@ import org.gradle.api.tasks.TaskAction
  * @Author: chenenyu
  * @Created: 16/8/29 11:26.
  */
-class TpPatchTask extends DefaultTask {
+class PatchTask extends DefaultTask {
 
     @Input
     Patch mPatch
@@ -56,7 +56,7 @@ class TpPatchTask extends DefaultTask {
         String bsdiff = BsDiffUtils.getBsDiffFilePath(project)
 
         File[] originalAllDex = new File(mPatch.originalDexPath).listFiles()
-        File dexDir = TpPlugin.getDexFolder(project, mPatch)
+        File dexDir = DeltaPlugin.getDexFolder(project, mPatch)
         dexDir.listFiles().each { dex ->
             File originalDex = originalAllDex.find {
                 it.name.equals(dex.name)
@@ -89,12 +89,12 @@ class TpPatchTask extends DefaultTask {
         Runtime.runtime.exec(
                 "${adbPath} shell;" +
                         "su;" +
-                        "rm -rf /data/local/tmp/tp;" +
-                        "mkdir /data/local/tmp/tp;" +
+                        "rm -rf /data/local/tmp/delta;" +
+                        "mkdir /data/local/tmp/delta;" +
                         "exit;")
 
         mPatchDir.eachFileMatch(FileType.FILES, ~/.+\.dex/) { dex ->
-            Runtime.runtime.exec("${adbPath} push ${dex.absolutePath} /data/local/tmp/tp/${dex.name}")
+            Runtime.runtime.exec("${adbPath} push ${dex.absolutePath} /data/local/tmp/delta/${dex.name}")
         }
     }
 

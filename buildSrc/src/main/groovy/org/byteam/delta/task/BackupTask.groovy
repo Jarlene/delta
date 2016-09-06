@@ -1,13 +1,13 @@
-package org.byteam.tp.patch.task
+package org.byteam.delta.task
 
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.ProGuardTransform
 import com.google.common.base.Joiner
 import org.apache.commons.io.FileUtils
-import org.byteam.tp.patch.TpPlugin
-import org.byteam.tp.patch.bean.Patch
-import org.byteam.tp.patch.util.TaskUtils
+import org.byteam.delta.DeltaPlugin
+import org.byteam.delta.bean.Patch
+import org.byteam.delta.util.TaskUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
@@ -18,7 +18,7 @@ import org.gradle.api.tasks.TaskAction
  * @Author: chenenyu
  * @Created: 16/8/24 18:50.
  */
-class TpBackupTask extends DefaultTask {
+class BackupTask extends DefaultTask {
 
     @Input
     Patch mPatch
@@ -93,7 +93,7 @@ class TpBackupTask extends DefaultTask {
         String transformClassesWithDexForVariant = TaskUtils.getTransformDex(mVariant)
         def dexTask = project.tasks.findByName(transformClassesWithDexForVariant) as TransformTask
         if (dexTask) {
-            File dexDir = TpPlugin.getDexFolder(project, mPatch)
+            File dexDir = DeltaPlugin.getDexFolder(project, mPatch)
             if (!dexDir.exists()) {
                 throw new IllegalArgumentException(String.format("Can't find dex directory: %s", dexDir.absolutePath))
             }

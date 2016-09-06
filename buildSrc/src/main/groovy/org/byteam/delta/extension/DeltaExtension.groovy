@@ -1,9 +1,10 @@
-package org.byteam.tp.patch.extension
+package org.byteam.delta.extension
+
 /**
  * @Author: chenenyu
  * @Created: 16/8/18 18:06.
  */
-class TpExtension {
+class DeltaExtension {
     /**
      * 是否开启patch
      */
@@ -25,7 +26,7 @@ class TpExtension {
     String mapping
 
     /**
-     * 生成patch后自动拷贝到手机rom:/data/local/tmp/tp/
+     * 生成patch后自动拷贝到手机rom:/data/local/tmp/delta/
      */
     boolean autoPushPatchToDevice
 }

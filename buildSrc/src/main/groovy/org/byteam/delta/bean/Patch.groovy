@@ -1,4 +1,4 @@
-package org.byteam.tp.patch.bean
+package org.byteam.delta.bean
 
 import java.text.SimpleDateFormat
 
