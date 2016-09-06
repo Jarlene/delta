@@ -1,4 +1,4 @@
-package org.byteam.tp;
+package org.byteam.delta;
 
 import android.app.Application;
 import android.content.Context;
@@ -6,9 +6,9 @@ import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.util.Log;
 
-import org.byteam.tp.patch.TpPatch;
-import org.byteam.tp.util.IOUtils;
-import org.byteam.tp.util.ReflectionUtils;
+import org.byteam.delta.patch.DeltaPatch;
+import org.byteam.delta.util.IOUtils;
+import org.byteam.delta.util.ReflectionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,34 +25,34 @@ import java.util.zip.ZipFile;
 
 import dalvik.system.DexFile;
 
-import static org.byteam.tp.util.ReflectionUtils.findField;
-import static org.byteam.tp.util.ReflectionUtils.injectPatchDexAtFirst;
+import static org.byteam.delta.util.ReflectionUtils.findField;
+import static org.byteam.delta.util.ReflectionUtils.injectPatchDexAtFirst;
 
 
 /**
  * @Author: chenenyu
  * @Created: 16/8/31 15:57.
  */
-public class Tp {
-    static final String TAG = "tp";
+public class Delta {
+    static final String TAG = "delta";
 
     private static final String CODE_CACHE_NAME = "code_cache";
 
-    private static final String CODE_CACHE_SECONDARY_FOLDER_NAME = "tp-dexes";
+    private static final String CODE_CACHE_SECONDARY_FOLDER_NAME = "delta-dexes";
 
-    private static final String OLD_SECONDARY_FOLDER_NAME = "tp-dexes";
+    private static final String OLD_SECONDARY_FOLDER_NAME = "delta-dexes";
 
-    private static String APK_DEX_DIR = "tp_original";
+    private static String APK_DEX_DIR = "delta_original";
 
     private static File mApkDexDir; // 存放apk中的dex
 
-    private static String PATCHED_DEX_DIR = "tp_patched";
+    private static String PATCHED_DEX_DIR = "delta_patched";
 
     private static File mPatchedDexDir; // 存放打好补丁的dex
 
     private static final Set<String> installedApk = new HashSet<>();
 
-    private Tp() {
+    private Delta() {
     }
 
     /**
@@ -61,7 +61,7 @@ public class Tp {
      * @param context Context
      */
     public static void applyPatchFromDevice(Context context) {
-        File[] patches = new File("/data/local/tmp/tp").listFiles();
+        File[] patches = new File("/data/local/tmp/delta").listFiles();
         if (patches != null && patches.length > 0) {
             for (File patch : patches) {
                 applyPatch(context, patch);
@@ -96,7 +96,7 @@ public class Tp {
             return;
         }
         if (apkDexes.length == 1) {
-            int patchResult = TpPatch.patch(apkDexes[0].getAbsolutePath(),
+            int patchResult = DeltaPatch.patch(apkDexes[0].getAbsolutePath(),
                     new File(mPatchedDexDir, apkDexes[0].getName()).getAbsolutePath(),
                     patchDex.getAbsolutePath());
             if (patchResult == 0) {
@@ -107,7 +107,7 @@ public class Tp {
         } else if (apkDexes.length > 1) {
             for (File apkDex : apkDexes) {
                 if (patchDex.getName().equals(apkDex.getName())) {
-                    int patchResult = TpPatch.patch(apkDex.getAbsolutePath(),
+                    int patchResult = DeltaPatch.patch(apkDex.getAbsolutePath(),
                             new File(mPatchedDexDir, apkDex.getName()).getAbsolutePath(),
                             patchDex.getAbsolutePath());
                     if (patchResult == 0) {
@@ -191,7 +191,7 @@ public class Tp {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Tp installation failed (" + e.getMessage() + ").");
+            throw new RuntimeException("Delta installation failed (" + e.getMessage() + ").");
         }
         Log.i(TAG, "install done");
     }

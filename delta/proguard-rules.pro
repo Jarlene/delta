@@ -16,4 +16,4 @@
 #   public *;
 #}
 
--keep class org.byteam.tp.patch.** {*;}
+-keep class org.byteam.delta.patch.** {*;}
