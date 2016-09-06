@@ -2,6 +2,7 @@ package org.byteam.tp.patch.task
 
 import com.android.build.gradle.api.ApplicationVariant
 import groovy.io.FileType
+import org.apache.commons.io.Charsets
 import org.apache.commons.io.FileUtils
 import org.byteam.tp.patch.TpPlugin
 import org.byteam.tp.patch.bean.Patch
@@ -9,8 +10,6 @@ import org.byteam.tp.patch.util.BsDiffUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-
-import java.nio.charset.Charset
 
 /**
  * Generates patch.
@@ -76,7 +75,7 @@ class TpPatchTask extends DefaultTask {
                     println("Patch successful")
                 } else {
                     FileUtils.writeStringToFile(new File(mPatchDir, 'patch.log'),
-                            consoleMsg.toString(), Charset.forName("UTF-8"))
+                            consoleMsg.toString(), Charsets.UTF_8)
                     println("Generate patch file(s) failed, please see 'patch.log' for more info.")
                 }
             } else {

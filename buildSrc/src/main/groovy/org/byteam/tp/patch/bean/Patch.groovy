@@ -80,12 +80,8 @@ class Patch {
     }
 
     public File getMainDexListFile() {
-        File file = new File(getMainDexListPath());
+        File file = new File(getOriginalPath() + File.separator + MAIN_DEX_LIST_FILE_NAME);
         return file;
-    }
-
-    public String getMainDexListPath() {
-        return getOriginalPath() + File.separator + MAIN_DEX_LIST_FILE_NAME;
     }
 
 }
