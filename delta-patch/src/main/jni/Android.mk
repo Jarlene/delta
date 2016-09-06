@@ -2,11 +2,10 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := tp
+LOCAL_MODULE    := delta
 
 
-LOCAL_SRC_FILES :=     tp_patch.c \
-                       bsdiff.c \
+LOCAL_SRC_FILES :=     delta_patch.c \
                        bspatch.c \
                        bzip2/blocksort.c \
                        bzip2/bzip2.c \

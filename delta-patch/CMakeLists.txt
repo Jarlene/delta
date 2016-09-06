@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 set(SOURCE_FILES
-    src/main/jni/tp_patch.c
-    src/main/jni/bsdiff.c
+    src/main/jni/delta_patch.c
     src/main/jni/bspatch.c
     src/main/jni/bzip2/blocksort.c
     src/main/jni/bzip2/bzip2.c
@@ -24,7 +23,7 @@ set(SOURCE_FILES
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-             tp
+             delta
 
              # Sets the library as a shared library.
              SHARED
@@ -52,4 +51,4 @@ find_library( # Sets the name of the path variable.
 # build script, prebuilt third-party libraries, or system libraries.
 
 # If use android/log, uncomment below line.
-# target_link_libraries( tp-patch ${log-lib} )
+# target_link_libraries( delta ${log-lib} )
