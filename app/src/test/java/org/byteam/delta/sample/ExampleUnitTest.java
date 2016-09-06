@@ -1,4 +1,4 @@
-package org.byteam.sample;
+package org.byteam.delta.sample;
 
 import org.junit.Test;
 

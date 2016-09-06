@@ -1,9 +1,9 @@
-package org.byteam.sample;
+package org.byteam.delta.sample;
 
 import android.content.Context;
 import android.support.multidex.MultiDexApplication;
 
-import org.byteam.tp.Tp;
+import org.byteam.delta.Delta;
 
 /**
  * @Author: chenenyu
@@ -14,7 +14,7 @@ public class App extends MultiDexApplication {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
-        Tp.install(this);
+        Delta.install(this);
     }
 
     @Override

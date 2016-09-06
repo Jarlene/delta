@@ -1,4 +1,4 @@
-package org.byteam.sample;
+package org.byteam.delta.sample;
 
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
