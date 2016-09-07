@@ -1,0 +1,45 @@
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+Properties config = new Properties()
+config.load(project.file('../config.properties').newDataInputStream())
+
+def GROUP = config.getProperty("GROUP")
+def ARTIFACT_ID = config.getProperty("DELTA_PLUGIN_ARTIFACT_ID")
+def VERSION = config.getProperty("DELTA_PLUGIN_VERSION")
+
+group = GROUP
+version = VERSION
+
+publishing {
+    publications {
+        bintray(MavenPublication) {
+            from components.java
+            groupId GROUP
+            artifactId ARTIFACT_ID
+            version VERSION
+        }
+    }
+}
+
+bintray {
+    Properties bintray = new Properties()
+    bintray.load(project.file('../local.properties').newDataInputStream())
+    user = bintray.getProperty("bintray.user")
+    key = bintray.getProperty("bintray.apikey")
+
+    publications = ['bintray']
+    publish = true
+    pkg {
+        repo = "maven" // 指定repo name
+        name = ARTIFACT_ID
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/byteam/delta.git'
+        websiteUrl = 'https://github.com/byteam/delta'
+        issueTrackerUrl = 'https://github.com/byteam/delta/issues'
+        userOrg = 'byteam' // 发布到org: byteam
+        desc = "Delta gradle plugin."
+        labels = ["gradle-plugin", "delta", "patch", "hot fix"]
+        publicDownloadNumbers = true
+    }
+}

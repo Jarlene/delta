@@ -1,13 +1,13 @@
-buildscript {
-    dependencies {
+apply plugin: 'groovy'
 
-    }
+buildscript {
     repositories {
         jcenter()
     }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7'
+    }
 }
-
-apply plugin: 'groovy'
 
 repositories {
     jcenter()
@@ -19,14 +19,10 @@ configurations {
     compile.extendsFrom provided
 }
 
-//sourceSets {
-//    main {
-//        compileClasspath += configurations.provided
-//    }
-//}
-
 dependencies {
     compile localGroovy()
     compile gradleApi()
-    compile 'com.android.tools.build:gradle:2.1.3'
+    provided 'com.android.tools.build:gradle:2.1.3'
 }
+
+apply from: 'publish.gradle'
