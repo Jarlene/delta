@@ -38,9 +38,7 @@ public class Delta {
 
     private static final String CODE_CACHE_NAME = "code_cache";
 
-    private static final String CODE_CACHE_SECONDARY_FOLDER_NAME = "delta-dexes";
-
-    private static final String OLD_SECONDARY_FOLDER_NAME = "delta-dexes";
+    private static final String CODE_CACHE_SECONDARY_FOLDER_NAME = "delta-optimize";
 
     private static String APK_DEX_DIR = "delta_original";
 
@@ -56,7 +54,7 @@ public class Delta {
     }
 
     /**
-     * 从手机rom中合并patch,一般用于测试.
+     * 从手机rom中合并patch,一般用于测试,切勿在正式环境中使用.
      *
      * @param context Context
      */
@@ -80,7 +78,14 @@ public class Delta {
     public static void applyPatch(Context context, File patchDex) {
         if (patchDex == null || !patchDex.exists() || patchDex.isDirectory()) return;
 
-        initDir(context);
+        try {
+            clearOldApkDexDir(context);
+        } catch (Throwable t) {
+            Log.w(TAG, "Something went wrong when trying to clear old apk dex extraction, "
+                    + "continuing without cleaning.", t);
+        }
+
+        mkDexDir(context);
 
         try {
             File apk = new File(getApplicationInfo(context).sourceDir);
@@ -103,6 +108,7 @@ public class Delta {
                 Log.i(TAG, "Patched dex successfully.");
             } else {
                 Log.e(TAG, "Failed to patch dex: " + patchDex.getAbsolutePath());
+                return;
             }
         } else if (apkDexes.length > 1) {
             for (File apkDex : apkDexes) {
@@ -115,10 +121,21 @@ public class Delta {
                     } else {
                         Log.e(TAG, "Failed to patch dex: " + patchDex.getAbsolutePath());
                     }
-                } else {
-                    Log.i(TAG, "Mismatch dex name.");
                 }
             }
+        }
+
+        File[] patchedDex = mPatchedDexDir.listFiles();
+        if (patchedDex == null || patchedDex.length < 1) {
+            Log.i(TAG, "No patched dex.");
+            return;
+        }
+        try {
+            File optimizedDir = getOptimizedDexDir(context, getApplicationInfo(context));
+            installOrOptimizePatch(context.getClassLoader(), Arrays.asList(patchedDex),
+                    optimizedDir, true);
+        } catch (Exception e) {
+            throw new RuntimeException("Delta optimization failed (" + e.getMessage() + ").");
         }
     }
 
@@ -132,7 +149,7 @@ public class Delta {
     public static void install(Context context) {
         Log.i(TAG, "install");
 
-        initDir(context);
+        mkDexDir(context);
         File[] patchedDex = mPatchedDexDir.listFiles();
         if (patchedDex == null || patchedDex.length < 1) {
             Log.i(TAG, "No patched dex.");
@@ -178,26 +195,19 @@ public class Delta {
                     return;
                 }
 
-                try {
-                    clearOldDexDir(context);
-                } catch (Throwable t) {
-                    Log.w(TAG, "Something went wrong when trying to clear old dex extraction, "
-                            + "continuing without cleaning.", t);
-                }
+                File optimizedDir = getOptimizedDexDir(context, applicationInfo);
 
-                // optimizedDirectory
-                File dexDir = getDexDir(context, applicationInfo);
-                installAllPatchedDexes(loader, dexDir, Arrays.asList(patchedDex));
+                installOrOptimizePatch(loader, Arrays.asList(patchedDex), optimizedDir, false);
             }
-
         } catch (Exception e) {
             throw new RuntimeException("Delta installation failed (" + e.getMessage() + ").");
         }
+
         Log.i(TAG, "install done");
     }
 
     public static void clean(Context context) {
-        initDir(context);
+        mkDexDir(context);
         IOUtils.cleanDirectory(mPatchedDexDir);
     }
 
@@ -206,14 +216,13 @@ public class Delta {
      *
      * @param context Context
      */
-    private static void initDir(Context context) {
+    private static void mkDexDir(Context context) {
         if (mApkDexDir == null)
             mApkDexDir = new File(context.getFilesDir(), APK_DEX_DIR);
         if (mPatchedDexDir == null)
             mPatchedDexDir = new File(context.getFilesDir(), PATCHED_DEX_DIR);
         try {
             mkdirChecked(mApkDexDir);
-            IOUtils.cleanDirectory(mApkDexDir);
             mkdirChecked(mPatchedDexDir);
         } catch (IOException e) {
             Log.e(TAG, "Failed to create directory.", e);
@@ -224,8 +233,8 @@ public class Delta {
         return context.getApplicationInfo();
     }
 
-    private static void clearOldDexDir(Context context) throws Exception {
-        File dexDir = new File(context.getFilesDir(), OLD_SECONDARY_FOLDER_NAME);
+    private static void clearOldApkDexDir(Context context) {
+        File dexDir = new File(context.getFilesDir(), APK_DEX_DIR);
         if (dexDir.isDirectory()) {
             Log.i(TAG, "Clearing old secondary dex dir (" + dexDir.getPath() + ").");
             File[] files = dexDir.listFiles();
@@ -250,7 +259,11 @@ public class Delta {
         }
     }
 
-    private static File getDexDir(Context context, ApplicationInfo applicationInfo)
+    /**
+     * @return /data/data/package/code_cache/{@link #CODE_CACHE_SECONDARY_FOLDER_NAME}
+     * @throws IOException
+     */
+    private static File getOptimizedDexDir(Context context, ApplicationInfo applicationInfo)
             throws IOException {
         File cache = new File(applicationInfo.dataDir, CODE_CACHE_NAME);
         try {
@@ -287,11 +300,12 @@ public class Delta {
     }
 
     /**
-     * Install patched dex.
+     * Install or optimize patched dex.
      *
-     * @param loader current classloader.
-     * @param dexDir optimized directory.
-     * @param files  patched dex.
+     * @param loader       current classloader.
+     * @param files        patched dex.
+     * @param optimizedDir optimized directory.
+     * @param onlyOptimize only optimize dex, not install.
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws NoSuchFieldException
@@ -299,18 +313,19 @@ public class Delta {
      * @throws NoSuchMethodException
      * @throws IOException
      */
-    private static void installAllPatchedDexes(ClassLoader loader, File dexDir, List<File> files)
+    private static void installOrOptimizePatch(ClassLoader loader, List<File> files,
+                                               File optimizedDir, boolean onlyOptimize)
             throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException,
             InvocationTargetException, NoSuchMethodException, IOException {
         if (!files.isEmpty()) {
             if (Build.VERSION.SDK_INT >= 24) {
-                V24.install(loader, files, dexDir);
+                V24.install(loader, files, optimizedDir, onlyOptimize);
             } else if (Build.VERSION.SDK_INT >= 23) {
-                V23.install(loader, files, dexDir);
+                V23.install(loader, files, optimizedDir, onlyOptimize);
             } else if (Build.VERSION.SDK_INT >= 19) {
-                V19.install(loader, files, dexDir);
+                V19.install(loader, files, optimizedDir, onlyOptimize);
             } else if (Build.VERSION.SDK_INT >= 14) {
-                V14.install(loader, files, dexDir);
+                V14.install(loader, files, optimizedDir, onlyOptimize);
             } else {
                 V4.install(loader, files);
             }
@@ -323,7 +338,7 @@ public class Delta {
     private static final class V24 {
 
         private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
-                                    File optimizedDirectory)
+                                    File optimizedDirectory, boolean onlyOptimize)
                 throws IllegalArgumentException, IllegalAccessException,
                 NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
             /* The patched class loader is expected to be a descendant of
@@ -334,9 +349,14 @@ public class Delta {
             Field pathListField = findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
             ArrayList<IOException> suppressedExceptions = new ArrayList<>();
-            injectPatchDexAtFirst(dexPathList, "dexElements", makeDexElements(dexPathList,
-                    new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
-                    suppressedExceptions, loader));
+            if (onlyOptimize) {
+                makeDexElements(dexPathList, new ArrayList<>(additionalClassPathEntries),
+                        optimizedDirectory, suppressedExceptions, loader);
+            } else {
+                injectPatchDexAtFirst(dexPathList, "dexElements", makeDexElements(dexPathList,
+                        new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
+                        suppressedExceptions, loader));
+            }
             if (suppressedExceptions.size() > 0) {
                 for (IOException e : suppressedExceptions) {
                     Log.w(TAG, "Exception in makeDexElement", e);
@@ -388,7 +408,7 @@ public class Delta {
     private static final class V23 {
 
         private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
-                                    File optimizedDirectory)
+                                    File optimizedDirectory, boolean onlyOptimize)
                 throws IllegalArgumentException, IllegalAccessException,
                 NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
             /* The patched class loader is expected to be a descendant of
@@ -399,9 +419,14 @@ public class Delta {
             Field pathListField = findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
             ArrayList<IOException> suppressedExceptions = new ArrayList<>();
-            injectPatchDexAtFirst(dexPathList, "dexElements", makePathElements(dexPathList,
-                    new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
-                    suppressedExceptions));
+            if (onlyOptimize) {
+                makePathElements(dexPathList, new ArrayList<>(additionalClassPathEntries),
+                        optimizedDirectory, suppressedExceptions);
+            } else {
+                injectPatchDexAtFirst(dexPathList, "dexElements", makePathElements(dexPathList,
+                        new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
+                        suppressedExceptions));
+            }
             if (suppressedExceptions.size() > 0) {
                 for (IOException e : suppressedExceptions) {
                     Log.w(TAG, "Exception in makeDexElement", e);
@@ -451,7 +476,7 @@ public class Delta {
     private static final class V19 {
 
         private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
-                                    File optimizedDirectory)
+                                    File optimizedDirectory, boolean onlyOptimize)
                 throws IllegalArgumentException, IllegalAccessException,
                 NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
             /* The patched class loader is expected to be a descendant of
@@ -462,9 +487,14 @@ public class Delta {
             Field pathListField = findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
             ArrayList<IOException> suppressedExceptions = new ArrayList<>();
-            injectPatchDexAtFirst(dexPathList, "dexElements", makeDexElements(dexPathList,
-                    new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
-                    suppressedExceptions));
+            if (onlyOptimize) {
+                makeDexElements(dexPathList, new ArrayList<>(additionalClassPathEntries),
+                        optimizedDirectory, suppressedExceptions);
+            } else {
+                injectPatchDexAtFirst(dexPathList, "dexElements", makeDexElements(dexPathList,
+                        new ArrayList<>(additionalClassPathEntries), optimizedDirectory,
+                        suppressedExceptions));
+            }
             if (suppressedExceptions.size() > 0) {
                 for (IOException e : suppressedExceptions) {
                     Log.w(TAG, "Exception in makeDexElement", e);
@@ -514,7 +544,7 @@ public class Delta {
     private static final class V14 {
 
         private static void install(ClassLoader loader, List<File> additionalClassPathEntries,
-                                    File optimizedDirectory)
+                                    File optimizedDirectory, boolean onlyOptimize)
                 throws IllegalArgumentException, IllegalAccessException,
                 NoSuchFieldException, InvocationTargetException, NoSuchMethodException {
             /* The patched class loader is expected to be a descendant of
@@ -524,8 +554,13 @@ public class Delta {
              */
             Field pathListField = findField(loader, "pathList");
             Object dexPathList = pathListField.get(loader);
-            injectPatchDexAtFirst(dexPathList, "dexElements", makeDexElements(dexPathList,
-                    new ArrayList<>(additionalClassPathEntries), optimizedDirectory));
+            if (onlyOptimize) {
+                makeDexElements(dexPathList, new ArrayList<>(additionalClassPathEntries),
+                        optimizedDirectory);
+            } else {
+                injectPatchDexAtFirst(dexPathList, "dexElements", makeDexElements(dexPathList,
+                        new ArrayList<>(additionalClassPathEntries), optimizedDirectory));
+            }
         }
 
         /**

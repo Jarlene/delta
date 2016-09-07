@@ -19,6 +19,9 @@ import java.util.zip.ZipFile;
 class DexExtractor {
 
     public static void extract(File sourceApk, File destDir) throws IOException {
+        if (!destDir.exists()) {
+            destDir.mkdirs();
+        }
         InputStream is = null;
         OutputStream os = null;
         try {
