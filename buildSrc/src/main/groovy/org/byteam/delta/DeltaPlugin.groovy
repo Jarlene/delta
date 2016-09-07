@@ -16,10 +16,11 @@ import org.byteam.delta.task.PrePatchTask
 import org.byteam.delta.task.TaskConsts
 import org.byteam.delta.util.ReflectionUtils
 import org.byteam.delta.util.TaskUtils
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
 
 /**
  * @Author: chenenyu
@@ -29,12 +30,16 @@ class DeltaPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        def isAndroidApp = project.plugins.hasPlugin(AppPlugin)
-        if (!isAndroidApp) {
-            throw new GradleException("'com.android.application' plugin required.")
-        }
 
         def extension = project.extensions.create(ExtConsts.EXTENSION_NAME, DeltaExtension)
+
+        compileDelta(project, extension)
+
+        def isAndroidApp = project.plugins.hasPlugin(AppPlugin)
+        if (!isAndroidApp) {
+            println("'com.android.application' plugin required.")
+            return
+        }
 
         project.afterEvaluate {
 
@@ -61,8 +66,10 @@ class DeltaPlugin implements Plugin<Project> {
                 if (extension.mapping) { // If custom mapping exists.
                     File customMappingFile = new File(extension.mapping)
                     if (customMappingFile.exists() && customMappingFile.isFile()) {
-                        String transformClassesAndResourcesWithProguardForVariant = TaskUtils.getTransformProguard(variant)
-                        def proguardTask = project.tasks.findByName(transformClassesAndResourcesWithProguardForVariant) as TransformTask
+                        String transformClassesAndResourcesWithProguardForVariant =
+                                TaskUtils.getTransformProguard(variant)
+                        def proguardTask = project.tasks.findByName(
+                                transformClassesAndResourcesWithProguardForVariant) as TransformTask
                         if (proguardTask) {
                             def proguard = proguardTask.transform as ProGuardTransform
                             proguard.applyTestedMapping(customMappingFile)
@@ -115,6 +122,32 @@ class DeltaPlugin implements Plugin<Project> {
                     println("Can not find task: ${assembleVariant}")
                 }
 
+            }
+        }
+    }
+
+    /**
+     * compile delta lib.
+     */
+    private void compileDelta(Project project, DeltaExtension extension) {
+        Project delta = project.rootProject.findProject("delta")
+        if (delta) {
+            project.dependencies {
+                compile delta
+            }
+        } else {
+            if (extension.deltaVersion) {
+                project.dependencies.add('compile', "org.byteam.delta:delta:${extension.deltaVersion}")
+            } else {
+                Configuration configuration = project.rootProject.buildscript.configurations
+                        .getByName('classpath')
+                configuration.allDependencies.all { Dependency dependency ->
+                    if (dependency.group == "org.byteam.delta") {
+                        project.dependencies.add('compile', "org.byteam.delta:delta:${dependency.version}")
+                    } else {
+                        println("Can not find delta plugin.")
+                    }
+                }
             }
         }
     }

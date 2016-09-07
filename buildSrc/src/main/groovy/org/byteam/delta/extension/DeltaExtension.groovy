@@ -16,6 +16,11 @@ class DeltaExtension {
     int versionCode
 
     /**
+     * 指定插件使用的delta版本,默认忽略
+     */
+    String deltaVersion
+
+    /**
      * 每个dex包含的方法数上限.
      */
     int maxNumberOfIdxPerDex = ExtConsts.DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX
