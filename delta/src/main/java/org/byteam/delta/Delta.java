@@ -70,7 +70,7 @@ public class Delta {
     }
 
     /**
-     * 合并指定的patch.
+     * 合并指定的patch. 该操作为耗时操作,建议放到非UI线程执行.
      *
      * @param context  Context
      * @param patchDex patch文件
