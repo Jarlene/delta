@@ -6,10 +6,19 @@ config.load(project.file('../config.properties').newDataInputStream())
 
 def GROUP = config.getProperty("GROUP")
 def ARTIFACT_ID = config.getProperty("DELTA_PLUGIN_ARTIFACT_ID")
-def VERSION = config.getProperty("DELTA_PLUGIN_VERSION")
+def VERSION = config.getProperty("DELTA_VERSION")
 
 group = GROUP
 version = VERSION
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+    archives sourcesJar
+}
 
 publishing {
     publications {
@@ -18,6 +27,8 @@ publishing {
             groupId GROUP
             artifactId ARTIFACT_ID
             version VERSION
+
+            artifact sourcesJar
         }
     }
 }
@@ -31,13 +42,13 @@ bintray {
     publications = ['bintray']
     publish = true
     pkg {
-        repo = "maven" // 指定repo name
+        repo = "maven"
         name = ARTIFACT_ID
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/byteam/delta.git'
         websiteUrl = 'https://github.com/byteam/delta'
         issueTrackerUrl = 'https://github.com/byteam/delta/issues'
-        userOrg = 'byteam' // 发布到org: byteam
+        userOrg = 'byteam'
         desc = "Delta gradle plugin."
         labels = ["gradle-plugin", "delta", "patch", "hot fix"]
         publicDownloadNumbers = true
