@@ -66,7 +66,7 @@ class Patch {
      * @return app/patch/version_1/flavor/debug{release}/patch+时间戳
      */
     private String getPatchPath() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss")
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss")
         return getVariantPath() + File.separator + PATCH_FILE_NAME + "_" + sdf.format(new Date());
     }
 
