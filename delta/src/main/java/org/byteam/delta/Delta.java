@@ -236,10 +236,10 @@ public class Delta {
     private static void clearOldApkDexDir(Context context) {
         File dexDir = new File(context.getFilesDir(), APK_DEX_DIR);
         if (dexDir.isDirectory()) {
-            Log.i(TAG, "Clearing old secondary dex dir (" + dexDir.getPath() + ").");
+            Log.i(TAG, "Clearing old apk dex dir (" + dexDir.getPath() + ").");
             File[] files = dexDir.listFiles();
             if (files == null) {
-                Log.w(TAG, "Failed to list secondary dex dir content (" + dexDir.getPath() + ").");
+                Log.w(TAG, "Failed to list apk dex dir content (" + dexDir.getPath() + ").");
                 return;
             }
             for (File oldFile : files) {
@@ -252,9 +252,9 @@ public class Delta {
                 }
             }
             if (!dexDir.delete()) {
-                Log.w(TAG, "Failed to delete secondary dex dir " + dexDir.getPath());
+                Log.w(TAG, "Failed to delete apk dex dir " + dexDir.getPath());
             } else {
-                Log.i(TAG, "Deleted old secondary dex dir " + dexDir.getPath());
+                Log.i(TAG, "Deleted old apk dex dir " + dexDir.getPath());
             }
         }
     }
