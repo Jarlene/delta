@@ -144,8 +144,6 @@ class DeltaPlugin implements Plugin<Project> {
                 configuration.allDependencies.all { Dependency dependency ->
                     if (dependency.group == "org.byteam.delta") {
                         project.dependencies.add('compile', "org.byteam.delta:delta:${dependency.version}")
-                    } else {
-                        println("Can not find delta plugin.")
                     }
                 }
             }
@@ -172,6 +170,8 @@ class DeltaPlugin implements Plugin<Project> {
             additionalParameters << arg
             dexOptions.additionalParameters = additionalParameters
             ReflectionUtils.setField(dexTransform, dexTransform.class, "dexOptions", dexOptions)
+        } else {
+            println("'maxNumberOfIdxPerDex' only works on gradle plugin version 2.2.x or above.")
         }
     }
 

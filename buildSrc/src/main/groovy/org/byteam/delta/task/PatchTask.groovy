@@ -47,7 +47,7 @@ class PatchTask extends DefaultTask {
     }
 
     private boolean checkFiles() {
-        File originalDexDir = new File(mPatch.originalDexPath)
+        File originalDexDir = new File(mPatch.backupDexPath)
         return originalDexDir.exists() && originalDexDir.directory && originalDexDir.listFiles() != null
     }
 
@@ -55,7 +55,7 @@ class PatchTask extends DefaultTask {
         BsDiffUtils.copyBsDiff2BuildFolder(project)
         String bsdiff = BsDiffUtils.getBsDiffFilePath(project)
 
-        File[] originalAllDex = new File(mPatch.originalDexPath).listFiles()
+        File[] originalAllDex = new File(mPatch.backupDexPath).listFiles()
         File dexDir = DeltaPlugin.getDexFolder(project, mPatch)
         dexDir.listFiles().each { dex ->
             File originalDex = originalAllDex.find {

@@ -11,7 +11,7 @@ class Patch {
     static final String PATCH_FILE_NAME = "patch";
     static final String MAPPING_FILE_NAME = "mapping.txt";
     static final String MAIN_DEX_LIST_FILE_NAME = "maindexlist.txt";
-    static final String ORIGINAL_FILE_NAME = "original";
+    static final String BACKUP_FILE_NAME = "backup";
 
     String projectDir; // project根目录
     String version; // 版本号
@@ -49,17 +49,17 @@ class Patch {
     }
 
     /**
-     * @return app/patch/version_1/flavor/debug{release}/original
+     * @return app/patch/version_1/flavor/debug{release}/backup
      */
-    public String getOriginalPath() {
-        return getVariantPath() + File.separator + ORIGINAL_FILE_NAME;
+    public String getBackupPath() {
+        return getVariantPath() + File.separator + BACKUP_FILE_NAME;
     }
 
     /**
-     * @return app/patch/version_1/flavor/debug{release}/original/dex
+     * @return app/patch/version_1/flavor/debug{release}/backup/dex
      */
-    public String getOriginalDexPath() {
-        return getOriginalPath() + File.separator + 'dex';
+    public String getBackupDexPath() {
+        return getBackupPath() + File.separator + 'dex';
     }
 
     /**
@@ -75,12 +75,12 @@ class Patch {
     }
 
     public File getMappingFile() {
-        File file = new File(getOriginalPath() + File.separator + MAPPING_FILE_NAME);
+        File file = new File(getBackupPath() + File.separator + MAPPING_FILE_NAME);
         return file;
     }
 
     public File getMainDexListFile() {
-        File file = new File(getOriginalPath() + File.separator + MAIN_DEX_LIST_FILE_NAME);
+        File file = new File(getBackupPath() + File.separator + MAIN_DEX_LIST_FILE_NAME);
         return file;
     }
 

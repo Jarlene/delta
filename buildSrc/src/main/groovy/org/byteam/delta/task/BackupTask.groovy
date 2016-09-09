@@ -28,7 +28,7 @@ class BackupTask extends DefaultTask {
 
     @TaskAction
     void backupPatch() {
-        File originalDir = new File(mPatch.originalPath)
+        File originalDir = new File(mPatch.backupPath)
         originalDir.mkdirs()
         FileUtils.cleanDirectory(originalDir)
 
@@ -97,7 +97,7 @@ class BackupTask extends DefaultTask {
             if (!dexDir.exists()) {
                 throw new IllegalArgumentException(String.format("Can't find dex directory: %s", dexDir.absolutePath))
             }
-            File originalDexDir = new File(mPatch.originalDexPath)
+            File originalDexDir = new File(mPatch.backupDexPath)
             originalDexDir.mkdirs()
             FileUtils.cleanDirectory(originalDexDir)
             dexDir.eachFile { dex ->
