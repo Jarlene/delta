@@ -100,16 +100,18 @@ public class App extends Application {
 
     ...
 }
+```
 
+```
 /**
- * 从手机内存中合并patch,一般用于测试,切勿在正式环境中使用.
+ * 从手机内存中应用patch,一般用于测试,切勿在正式环境中使用.
  *
  * @param context Context
  */
 Delta.applyPatchFromDevice(Context context);
 
 /**
- * 合并指定的patch. 该操作为耗时操作,建议放到非UI线程执行.
+ * 应用指定的patch. 该操作为耗时操作,建议放到非UI线程执行.
  *
  * @param context  Context
  * @param patchDex patch文件
@@ -117,13 +119,28 @@ Delta.applyPatchFromDevice(Context context);
 Delta.applyPatch(Context context, File patchDex);
 
 /**
- * 删除所有热补丁.
+ * 删除所有补丁.
  *
  * @param context  Context
  */
 Delta.clean(Context context;
 
 ```
+
+## Partners
+
+*Looking forward to your join!*
+
+![dangdang](arts/partners/dangdang.png)
+
+## Thanks to
+
+1. [MultiDex](https://developer.android.com/studio/build/multidex.html)
+2. [微信热补丁实践之路](http://bugly.qq.com/bbs/forum.php?mod=viewthread&tid=1264&extra=page%3D1)
+3. [Binary diff/patch utility](http://www.daemonology.net/bsdiff/)
+4. [安卓App热补丁动态修复技术介绍](http://mp.weixin.qq.com/s?__biz=MzI1MTA1MzM2Nw==&mid=400118620&idx=1&sn=b4fdd5055731290eef12ad0d17f39d4a&scene=1&srcid=1031x2ljgSF4xJGlH1xMCJxO&uin=MjAyNzY1NTU=&key=04dce534b3b035ef58d8714d714d36bcc6cc7e136bbd64850522b491d143aafceb62c46421c5965e18876433791d16ec&devicetype=iMac%20MacBookPro12,1%20OSX%20OSX%2010.10.5%20build%2814F27%29&version=11020201&lang=zh_CN&pass_ticket=7O/VfztuLjqu23ED2WEkvy1SJstQD4eLRqX%2b%2bbCY3uE=)
+5. [Instant Run: How Does it Work?](https://medium.com/google-developers/instant-run-how-does-it-work-294a1633367f#.ft7r6je52)
+
 ## License
 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
