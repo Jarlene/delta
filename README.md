@@ -1,5 +1,7 @@
 [![Download](https://api.bintray.com/packages/byteam/maven/delta/images/download.svg)](https://bintray.com/byteam/maven/delta/_latestVersion) [![API](https://img.shields.io/badge/API-8%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=8) [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
+[中文wiki](https://github.com/byteam/delta/wiki)
+
 ![logo](arts/logo_huakang.png)
 
 > Delta offers your android app the hot fix and incremental upgrade powers.
