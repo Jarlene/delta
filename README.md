@@ -131,7 +131,7 @@ Delta.clean(Context context;
 
 *Looking forward to your join!*
 
-![dangdang](arts/partners/dangdang.png)
+[![dangdang](arts/partners/dangdang.png)](http://www.dangdang.com/) [![gohe](arts/partners/gohe.png)](http://www.gohelc.com/)
 
 ## Thanks to
 
