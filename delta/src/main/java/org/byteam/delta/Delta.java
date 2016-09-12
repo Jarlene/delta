@@ -531,7 +531,7 @@ public class Delta {
                 throws IllegalAccessException, InvocationTargetException,
                 NoSuchMethodException {
             Method makeDexElements = ReflectionUtils.findMethod(dexPathList, "makeDexElements",
-                    List.class, File.class, List.class);
+                    ArrayList.class, File.class, ArrayList.class);
 
             return (Object[]) makeDexElements.invoke(dexPathList, files, optimizedDirectory,
                     suppressedExceptions);
