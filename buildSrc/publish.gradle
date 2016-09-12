@@ -42,7 +42,7 @@ bintray {
 
     publications = ['bintray']
     publish = true
-    override = java.lang.Boolean.valueOf(OVERRIDE)
+    override = java.lang.Boolean.parseBoolean(OVERRIDE)
     pkg {
         repo = "maven"
         name = ARTIFACT_ID
