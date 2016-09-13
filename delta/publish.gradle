@@ -11,7 +11,6 @@ config.load(project.file('../config.properties').newDataInputStream())
 def GROUP = config.getProperty("GROUP")
 def ARTIFACT_ID = config.getProperty("DELTA_ARTIFACT_ID")
 def VERSION = config.getProperty("DELTA_VERSION")
-def OVERRIDE = config.getProperty("OVERRIDE")
 
 group = GROUP
 version = VERSION
@@ -72,7 +71,6 @@ bintray {
 
     configurations = ['archives']
     publish = true
-    override = java.lang.Boolean.parseBoolean(OVERRIDE)
     pkg {
         repo = "maven"
         name = ARTIFACT_ID
