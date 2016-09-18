@@ -1,18 +1,17 @@
-package org.byteam.delta.util;
+package org.byteam.delta;
 
 import android.util.Log;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * @Author: chenenyu
- * @Created: 16/8/16 17:11.
+ * <p>
+ * Created by chenenyu on 16/8/16.
  */
-public class IOUtils {
+class IOUtils {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
@@ -41,25 +40,6 @@ public class IOUtils {
             closeable.close();
         } catch (IOException e) {
             Log.w("IOUtils", "Failed to close resource.", e);
-        }
-    }
-
-    /**
-     * 删除文件或清空文件夹.
-     *
-     * @param file file or directory
-     */
-    public static void cleanDirectory(File file) {
-        if (file == null || !file.exists()) {
-            return;
-        }
-        if (file.isFile()) {
-            file.delete();
-        } else {
-            File[] files = file.listFiles();
-            for (File f : files) {
-                cleanDirectory(f);
-            }
         }
     }
 

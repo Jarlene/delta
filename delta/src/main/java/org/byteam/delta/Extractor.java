@@ -1,7 +1,5 @@
 package org.byteam.delta;
 
-import org.byteam.delta.util.IOUtils;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -13,14 +11,32 @@ import java.util.zip.ZipFile;
 
 
 /**
- * @Author: chenenyu
- * @Created: 16/8/31 15:22.
+ * Extractor for apk and dex.
+ * <p>
+ * Created by chenenyu on 16/8/31.
  */
-class DexExtractor {
+class Extractor {
 
-    public static void extract(File sourceApk, File destDir) throws IOException {
+    /**
+     * Extract dex(es) from specify apk.
+     *
+     * @param sourceApk apk
+     * @param destDir   destination dir
+     */
+    public static void extractDex(File sourceApk, File destDir) throws IOException {
+        if (sourceApk == null) {
+            throw new NullPointerException("Source must not be null");
+        }
+        if (destDir == null) {
+            throw new NullPointerException("Destination must not be null");
+        }
+        if (destDir.exists() && !destDir.isDirectory()) {
+            throw new IllegalArgumentException("Destination '" + destDir + "' is not a directory");
+        }
         if (!destDir.exists()) {
             destDir.mkdirs();
+        } else {
+            FileUtils.cleanDirectory(destDir);
         }
         InputStream is = null;
         OutputStream os = null;
@@ -29,14 +45,12 @@ class DexExtractor {
             Enumeration<ZipEntry> entries = (Enumeration<ZipEntry>) apk.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                if (entry.getName().matches("classes([1-9]?)\\d*\\.dex$")) {
+                if (entry.getName().startsWith("classes") && entry.getName().endsWith(".dex")) {
                     is = apk.getInputStream(entry);
                     os = new FileOutputStream(new File(destDir, entry.getName()));
                     IOUtils.copy(is, os);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         } finally {
             IOUtils.closeQuietly(os);
             IOUtils.closeQuietly(is);
