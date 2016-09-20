@@ -2,11 +2,16 @@ package org.byteam.delta
 
 import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.api.ApplicationVariant
+import com.android.build.gradle.api.BaseVariant
+import com.android.build.gradle.api.BaseVariantOutput
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.DexTransform
 import com.android.build.gradle.internal.transforms.ProGuardTransform
 import com.android.builder.Version
+import com.android.utils.XmlUtils
 import com.google.common.base.Joiner
+import org.apache.commons.io.Charsets
+import org.apache.commons.io.FileUtils
 import org.byteam.delta.bean.Patch
 import org.byteam.delta.extension.DeltaExtension
 import org.byteam.delta.extension.ExtConsts
@@ -21,7 +26,18 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
+import org.gradle.tooling.BuildException
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
 
+import javax.xml.transform.Transformer
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+
+import static com.android.SdkConstants.*
 /**
  * @Author: chenenyu
  * @Created: 16/8/17 11:03.
@@ -33,7 +49,7 @@ class DeltaPlugin implements Plugin<Project> {
 
         def extension = project.extensions.create(ExtConsts.EXTENSION_NAME, DeltaExtension)
 
-        compileDelta(project, extension)
+        dependencyDelta(project, extension)
 
         def isAndroidApp = project.plugins.hasPlugin(AppPlugin)
         if (!isAndroidApp) {
@@ -48,6 +64,13 @@ class DeltaPlugin implements Plugin<Project> {
             }
 
             project.android.applicationVariants.all { ApplicationVariant variant ->
+
+                variant.outputs.each { BaseVariantOutput output ->
+                    output.processManifest.doLast {
+                        handleManifest(project, variant, output.processManifest.manifestOutputFile)
+                    }
+                }
+
                 // Fetch version code.
                 int versionCode = extension.versionCode > 0 ? extension.versionCode : variant.versionCode
                 Patch patch = new Patch(project.projectDir.getAbsolutePath(), String.valueOf(versionCode),
@@ -126,10 +149,66 @@ class DeltaPlugin implements Plugin<Project> {
         }
     }
 
+    private void handleManifest(Project project, BaseVariant variant, File manifestFile) {
+        if (manifestFile.exists()) {
+            try {
+                Document document = XmlUtils.parseUtfXmlFile(manifestFile, true);
+                Element root = document.getDocumentElement();
+                if (root != null) {
+                    String applicationId = root.getAttribute(ATTR_PACKAGE);
+                    String applicationClass = null;
+                    NodeList children = root.getChildNodes();
+                    for (int i = 0; i < children.getLength(); i++) {
+                        Node node = children.item(i);
+                        if (node.getNodeType() == Node.ELEMENT_NODE &&
+                                node.getNodeName().equals(TAG_APPLICATION)) {
+                            Element application = (Element) node;
+                            String applicationName = ANDROID_NS_NAME_PREFIX + ATTR_NAME;
+                            if (application.hasAttribute(applicationName)) {
+                                String name = application.getAttribute(applicationName);
+                                assert !name.startsWith("."): name;
+                                if (!name.isEmpty()) {
+                                    applicationClass = name;
+                                }
+                                // Inject the bootstrapping application
+                                application.setAttribute(applicationName, "org.byteam.delta.BootstrapApplication");
+                                // Save AndroidManifest.xml
+                                Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                                DOMSource source = new DOMSource(document);
+                                StreamResult result = new StreamResult(manifestFile);
+                                transformer.transform(source, result);
+                            }
+                            break
+                        }
+                    }
+                    if (applicationId && applicationClass) {
+                        writeAppInfoClass(project, variant, applicationId, applicationClass)
+                    } else {
+                        throw new NullPointerException("Null applicationId or applicationClass")
+                    }
+                }
+            } catch (Exception e) {
+                throw new BuildException("Failed to inject bootstrapping application", e)
+            }
+        }
+    }
+
+    private void writeAppInfoClass(Project project, BaseVariant variant, String applicationId, String applicationClass) {
+        // Add generated code to compile source.
+        variant.javaCompiler.source(new File("${project.buildDir}/generated/source/delta"))
+
+        // Generate AppInfo.java
+        File appInfoFile = project.file("${project.buildDir.absolutePath}/generated/source/delta/org/byteam/delta/AppInfo.java")
+        def template = new AppInfoTemplate()
+        template.applicationId = applicationId
+        template.applicationClass = applicationClass
+        FileUtils.writeStringToFile(appInfoFile, template.getTemplate(), Charsets.UTF_8)
+    }
+
     /**
-     * compile delta lib.
+     * Compile delta lib.
      */
-    private void compileDelta(Project project, DeltaExtension extension) {
+    private void dependencyDelta(Project project, DeltaExtension extension) {
         Project delta = project.rootProject.findProject("delta")
         if (delta) {
             project.dependencies {
@@ -170,8 +249,6 @@ class DeltaPlugin implements Plugin<Project> {
             additionalParameters << arg
             dexOptions.additionalParameters = additionalParameters
             ReflectionUtils.setField(dexTransform, dexTransform.class, "dexOptions", dexOptions)
-        } else {
-            println("'maxNumberOfIdxPerDex' only works on gradle plugin version 2.2.x or above.")
         }
     }
 
