@@ -1,1 +1,1 @@
-include ':app', ':delta', ':delta-patch', ':buildSrc'
+include ':app', ':delta', ':buildSrc'
