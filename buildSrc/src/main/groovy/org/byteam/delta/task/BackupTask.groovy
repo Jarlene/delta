@@ -5,13 +5,11 @@ import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.ProGuardTransform
 import com.google.common.base.Joiner
 import org.apache.commons.io.FileUtils
-import org.byteam.delta.DeltaPlugin
 import org.byteam.delta.bean.Patch
 import org.byteam.delta.util.TaskUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-
 /**
  * Backup original files.
  *
@@ -34,7 +32,7 @@ class BackupTask extends DefaultTask {
 
         saveMapping()
         saveMaindexlist()
-        copyAllDexToPatch()
+        copyApkToPatch()
     }
 
     /**
@@ -86,25 +84,18 @@ class BackupTask extends DefaultTask {
         return new File(Joiner.on(File.separator).join(dir))
     }
 
-    /**
-     * 将dex拷贝到patch目录下。
-     */
-    private void copyAllDexToPatch() {
-        String transformClassesWithDexForVariant = TaskUtils.getTransformDex(mVariant)
-        def dexTask = project.tasks.findByName(transformClassesWithDexForVariant) as TransformTask
-        if (dexTask) {
-            File dexDir = DeltaPlugin.getDexFolder(project, mPatch)
-            if (!dexDir.exists()) {
-                throw new IllegalArgumentException(String.format("Can't find dex directory: %s", dexDir.absolutePath))
+    private void copyApkToPatch() {
+        mVariant.outputs.each {
+            File apk = it.getOutputFile()
+            if (apk != null && apk.name.endsWith(".apk")) {
+                File apkDir = new File(mPatch.backupApkPath)
+                if (!apkDir.exists()) {
+                    apkDir.mkdirs()
+                } else {
+                    FileUtils.cleanDirectory(apkDir)
+                }
+                FileUtils.copyFileToDirectory(apk, apkDir)
             }
-            File originalDexDir = new File(mPatch.backupDexPath)
-            originalDexDir.mkdirs()
-            FileUtils.cleanDirectory(originalDexDir)
-            dexDir.eachFile { dex ->
-                FileUtils.copyFileToDirectory(dex, originalDexDir)
-            }
-        } else {
-            println("Task:${transformClassesWithDexForVariant} not found.")
         }
     }
 }

@@ -56,10 +56,10 @@ class Patch {
     }
 
     /**
-     * @return app/patch/version_1/flavor/debug{release}/backup/dex
+     * @return app/patch/version_1/flavor/debug{release}/backup/apk
      */
-    public String getBackupDexPath() {
-        return getBackupPath() + File.separator + 'dex';
+    public String getBackupApkPath() {
+        return getBackupPath() + File.separator + 'apk';
     }
 
     /**

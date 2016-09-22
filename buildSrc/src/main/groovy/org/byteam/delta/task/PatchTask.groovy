@@ -4,9 +4,9 @@ import com.android.build.gradle.api.ApplicationVariant
 import groovy.io.FileType
 import org.apache.commons.io.Charsets
 import org.apache.commons.io.FileUtils
-import org.byteam.delta.DeltaPlugin
 import org.byteam.delta.bean.Patch
 import org.byteam.delta.util.BsDiffUtils
+import org.byteam.delta.util.HashUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
@@ -30,40 +30,51 @@ class PatchTask extends DefaultTask {
 
     File mPatchDir
 
+    boolean patchResult
+
     @TaskAction
     void patch() {
         if (checkFiles()) {
             mPatchDir = mPatch.patchDir
-            mPatchDir.mkdirs()
+            if (!mPatchDir.exists())
+                mPatchDir.mkdirs()
 
             executeDiff()
 
-            if (pushPatchToDevice) {
+            if (patchResult && pushPatchToDevice) {
                 copyPatchToDevice()
             }
         } else {
-            println("There are no backup files for patch.")
+            println("There are no backup files for patching.")
         }
     }
 
     private boolean checkFiles() {
-        File originalDexDir = new File(mPatch.backupDexPath)
-        return originalDexDir.exists() && originalDexDir.directory && originalDexDir.listFiles() != null
+        File apkDir = new File(mPatch.backupApkPath)
+        return apkDir.exists() && apkDir.directory && apkDir.listFiles() != null
     }
 
     private void executeDiff() {
         BsDiffUtils.copyBsDiff2BuildFolder(project)
         String bsdiff = BsDiffUtils.getBsDiffFilePath(project)
 
-        File[] originalAllDex = new File(mPatch.backupDexPath).listFiles()
-        File dexDir = DeltaPlugin.getDexFolder(project, mPatch)
-        dexDir.listFiles().each { dex ->
-            File originalDex = originalAllDex.find {
-                it.name.equals(dex.name)
+        File backupApk = new File(mPatch.backupApkPath).listFiles(new FileFilter() {
+            @Override
+            boolean accept(File file) {
+                return file.isFile() && file.getName().endsWith(".apk")
             }
-            if (originalDex) {
-                Process patch = new ProcessBuilder(bsdiff, originalDex.absolutePath, dex.absolutePath,
-                        new File(mPatchDir, dex.name).absolutePath).redirectErrorStream(true).start()
+        })[0]
+
+        mVariant.outputs.each {
+            File apk = it.getOutputFile()
+            if (HashUtils.md5(backupApk).equalsIgnoreCase(HashUtils.md5(apk))) {
+                println("Aborted. The hash value between ${backupApk.absolutePath} and " +
+                        "${apk.absolutePath} are the same.")
+                return
+            }
+            if (apk != null && apk.name.endsWith(".apk")) {
+                Process patch = new ProcessBuilder(bsdiff, backupApk.absolutePath, apk.absolutePath,
+                        new File(mPatchDir, apk.name).absolutePath).redirectErrorStream(true).start()
                 BufferedReader br = new BufferedReader(new InputStreamReader(patch.getInputStream()))
                 StringBuilder consoleMsg = new StringBuilder()
                 String line
@@ -73,28 +84,28 @@ class PatchTask extends DefaultTask {
                 int result = patch.waitFor()
                 if (result == 0) {
                     println("Patch successful")
+                    patchResult = true
                 } else {
+                    println("Generate patch files failed, please see 'patch.log' for more info.")
                     FileUtils.writeStringToFile(new File(mPatchDir, 'patch.log'),
                             consoleMsg.toString(), Charsets.UTF_8)
-                    println("Generate patch file(s) failed, please see 'patch.log' for more info.")
                 }
-            } else {
-                FileUtils.copyFileToDirectory(dex, mPatchDir)
             }
         }
     }
 
     private void copyPatchToDevice() {
+        String destDir = "/data/local/tmp/${mVariant.applicationId}_delta"
+
         String adbPath = project.android.adbExe.absolutePath
         Runtime.runtime.exec(
                 "${adbPath} shell;" +
                         "su;" +
-                        "rm -rf /data/local/tmp/delta;" +
-                        "mkdir /data/local/tmp/delta;" +
+                        "rm -rf ${destDir};" +
+                        "mkdir -p ${destDir};" +
                         "exit;")
-
-        mPatchDir.eachFileMatch(FileType.FILES, ~/.+\.dex/) { dex ->
-            Runtime.runtime.exec("${adbPath} push ${dex.absolutePath} /data/local/tmp/delta/${dex.name}")
+        mPatchDir.eachFileMatch(FileType.FILES, ~/.+\.apk/) { apk ->
+            Runtime.runtime.exec("${adbPath} push ${apk.absolutePath} ${destDir}/${apk.name}")
         }
     }
 

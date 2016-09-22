@@ -8,5 +8,4 @@ package org.byteam.delta.extension;
  */
 class ExtConsts {
     static final def EXTENSION_NAME = 'delta'
-    static final def DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX = 0xFF00 // 65280
 }

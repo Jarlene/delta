@@ -5,11 +5,9 @@ import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.api.BaseVariantOutput
 import com.android.build.gradle.internal.pipeline.TransformTask
-import com.android.build.gradle.internal.transforms.DexTransform
 import com.android.build.gradle.internal.transforms.ProGuardTransform
 import com.android.builder.Version
 import com.android.utils.XmlUtils
-import com.google.common.base.Joiner
 import org.apache.commons.io.Charsets
 import org.apache.commons.io.FileUtils
 import org.byteam.delta.bean.Patch
@@ -19,7 +17,6 @@ import org.byteam.delta.task.BackupTask
 import org.byteam.delta.task.PatchTask
 import org.byteam.delta.task.PrePatchTask
 import org.byteam.delta.task.TaskConsts
-import org.byteam.delta.util.ReflectionUtils
 import org.byteam.delta.util.TaskUtils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -38,6 +35,8 @@ import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 
 import static com.android.SdkConstants.*
+
+
 /**
  * @Author: chenenyu
  * @Created: 16/8/17 11:03.
@@ -49,7 +48,7 @@ class DeltaPlugin implements Plugin<Project> {
 
         def extension = project.extensions.create(ExtConsts.EXTENSION_NAME, DeltaExtension)
 
-        dependencyDelta(project, extension)
+        dependencyDelta(project)
 
         def isAndroidApp = project.plugins.hasPlugin(AppPlugin)
         if (!isAndroidApp) {
@@ -64,6 +63,8 @@ class DeltaPlugin implements Plugin<Project> {
             }
 
             project.android.applicationVariants.all { ApplicationVariant variant ->
+                // Compile generated source.
+                variant.javaCompiler.source(new File("${project.buildDir}/generated/source/delta"))
 
                 variant.outputs.each { BaseVariantOutput output ->
                     output.processManifest.doLast {
@@ -76,17 +77,8 @@ class DeltaPlugin implements Plugin<Project> {
                 Patch patch = new Patch(project.projectDir.getAbsolutePath(), String.valueOf(versionCode),
                         variant.flavorName, variant.buildType.name)
 
-                // dex task
-                String transformClassesWithDexForVariant = TaskUtils.getTransformDex(variant)
-                def dexTask = project.tasks.findByName(transformClassesWithDexForVariant) as TransformTask
-                if (dexTask) {
-                    setMaxNumberOfIdxPerDex(dexTask.transform as DexTransform, extension)
-                } else {
-                    println("Task:${transformClassesWithDexForVariant} not found.")
-                }
-
                 Task prePatchTask
-                if (extension.mapping) { // If custom mapping exists.
+                if (extension.mapping) { // If custom mapping exists, do not create pre-patch task.
                     File customMappingFile = new File(extension.mapping)
                     if (customMappingFile.exists() && customMappingFile.isFile()) {
                         String transformClassesAndResourcesWithProguardForVariant =
@@ -105,7 +97,6 @@ class DeltaPlugin implements Plugin<Project> {
                     if (cleanTask) {
                         prePatchTask = project.task(type: PrePatchTask, overwrite: true,
                                 TaskConsts.PRE_PATCH.concat(variant.name.capitalize())) { PrePatchTask task ->
-                            task.group = TaskConsts.GROUP
                             task.description = "Clean project and apply mapping for ${variant.name}"
                             task.mPatch = patch
                             task.mVariant = variant
@@ -116,29 +107,27 @@ class DeltaPlugin implements Plugin<Project> {
                     }
                 }
 
-                String assembleVariant = TaskUtils.getAssemble(variant)
-                Task assembleTask = project.tasks.findByName(assembleVariant)
-                if (assembleTask) {
+                if (variant.getAssemble()) {
                     project.task(type: BackupTask, overwrite: true,
                             TaskConsts.BACKUP.concat(variant.name.capitalize())) { BackupTask task ->
                         task.group = TaskConsts.GROUP
                         task.description = "Backup all required files for ${variant.name}"
                         task.mPatch = patch
                         task.mVariant = variant
-                        task.dependsOn assembleTask
+                        task.dependsOn variant.getAssemble()
                     }
 
                     project.task(type: PatchTask, overwrite: true,
                             TaskConsts.PATCH.concat(variant.name.capitalize())) { PatchTask task ->
                         task.group = TaskConsts.GROUP
-                        task.description = "Generates patchs for ${variant.name}"
+                        task.description = "Generates patch for ${variant.name}"
                         task.mPatch = patch
                         task.mVariant = variant
                         task.pushPatchToDevice = extension.autoPushPatchToDevice
-                        task.dependsOn assembleTask
+                        task.dependsOn variant.getAssemble()
                         if (prePatchTask) {
                             task.dependsOn prePatchTask
-                            assembleTask.mustRunAfter prePatchTask
+                            variant.getAssemble().mustRunAfter prePatchTask
                         }
                     }
                 } else {
@@ -194,9 +183,6 @@ class DeltaPlugin implements Plugin<Project> {
     }
 
     private void writeAppInfoClass(Project project, BaseVariant variant, String applicationId, String applicationClass) {
-        // Add generated code to compile source.
-        variant.javaCompiler.source(new File("${project.buildDir}/generated/source/delta"))
-
         // Generate AppInfo.java
         File appInfoFile = project.file("${project.buildDir.absolutePath}/generated/source/delta/org/byteam/delta/AppInfo.java")
         def template = new AppInfoTemplate()
@@ -208,47 +194,20 @@ class DeltaPlugin implements Plugin<Project> {
     /**
      * Compile delta lib.
      */
-    private void dependencyDelta(Project project, DeltaExtension extension) {
+    private void dependencyDelta(Project project) {
         Project delta = project.rootProject.findProject("delta")
         if (delta) {
             project.dependencies {
                 compile delta
             }
         } else {
-            if (extension.deltaVersion) {
-                project.dependencies.add('compile', "org.byteam.delta:delta:${extension.deltaVersion}")
-            } else {
-                Configuration configuration = project.rootProject.buildscript.configurations
-                        .getByName('classpath')
-                configuration.allDependencies.all { Dependency dependency ->
-                    if (dependency.group == "org.byteam.delta") {
-                        project.dependencies.add('compile', "org.byteam.delta:delta:${dependency.version}")
-                    }
+            Configuration configuration = project.rootProject.buildscript.configurations
+                    .getByName('classpath')
+            configuration.allDependencies.all { Dependency dependency ->
+                if (dependency.group == "org.byteam.delta") {
+                    project.dependencies.add('compile', "org.byteam.delta:delta:${dependency.version}")
                 }
             }
-        }
-    }
-
-    /**
-     * 指定每个dex的最大方法数。
-     */
-    private void setMaxNumberOfIdxPerDex(DexTransform dexTransform, DeltaExtension extension) {
-        if (isMajor2Minor2OrAboveVersion()) { // 2.2.x or above
-            // DefaultDexOptions
-            def dexOptions = ReflectionUtils.getField(dexTransform, dexTransform.class, "dexOptions")
-            List<String> additionalParameters = dexOptions.additionalParameters
-            if (additionalParameters == null) {
-                additionalParameters = []
-            }
-            String arg = '--set-max-idx-number='
-            if (extension.maxNumberOfIdxPerDex > 0 && extension.maxNumberOfIdxPerDex < 0xFFFF) {
-                arg = arg.concat("${extension.maxNumberOfIdxPerDex}")
-            } else {
-                arg = arg.concat(String.valueOf(ExtConsts.DEFAULT_MAX_NUMBER_OF_IDX_PER_DEX))
-            }
-            additionalParameters << arg
-            dexOptions.additionalParameters = additionalParameters
-            ReflectionUtils.setField(dexTransform, dexTransform.class, "dexOptions", dexOptions)
         }
     }
 
@@ -263,26 +222,6 @@ class DeltaPlugin implements Plugin<Project> {
             }
         }
         false
-    }
-
-    /**
-     * 获取生成dex的目录。
-     */
-    static File getDexFolder(Project project, Patch patch) {
-        List<String> dir = []
-        dir.add(project.buildDir.absolutePath)
-        dir.add('intermediates')
-        dir.add('transforms')
-        dir.add('dex')
-        if (patch.flavorName)
-            dir.add(patch.flavorName)
-        dir.add(patch.buildTypeName)
-        dir.add('folders')
-        dir.add('1000')
-        dir.add('1f')
-        dir.add('main')
-
-        return new File(Joiner.on(File.separator).join(dir))
     }
 
 }

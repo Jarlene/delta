@@ -48,6 +48,9 @@ class PrePatchTask extends DefaultTask {
         }
     }
 
+    /**
+     * todo Hook maindexlist task
+     */
     private void applyMaindexlist() {
         File maindexlist = mPatch.mainDexListFile
         if (maindexlist.exists()) {
