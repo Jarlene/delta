@@ -14,6 +14,5 @@ public class PatchReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Patch patch = intent.getParcelableExtra(PatchService.PATCH_FLAG);
         Delta.patchResult(context, patch);
-        abortBroadcast();
     }
 }

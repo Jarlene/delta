@@ -14,7 +14,7 @@
 
         <receiver android:name=".PatchReceiver">
             <intent-filter>
-                <action android:name="org.byteam.delta.patch-receiver"/>
+                <action android:name="org.byteam.delta.patch_receiver"/>
             </intent-filter>
         </receiver>
 

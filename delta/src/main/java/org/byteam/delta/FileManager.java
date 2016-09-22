@@ -20,7 +20,7 @@ class FileManager {
     /**
      * Returns the list of available .dex files to be loaded, possibly empty.
      */
-    public static List<String> getDexList(Context context) {
+    static List<String> getDexList(Context context) {
         File dexDir = Paths.getDexDirectory(context);
         String[] dexes = null;
         if (dexDir.exists()) {
@@ -39,7 +39,7 @@ class FileManager {
     /**
      * Returns the new apk, possibly null.
      */
-    public static String getNewApk(Context context) {
+    static String getNewApk(Context context) {
         File apkDir = Paths.getNewApkDirectory(context);
         if (apkDir.exists()) {
             File[] apks = apkDir.listFiles(new FilenameFilter() {
@@ -54,7 +54,7 @@ class FileManager {
             } else if (apks.length == 1) {
                 return apks[0].getAbsolutePath();
             } else {
-                Log.w(Delta.TAG, "Multiple apks was found in directory" + apkDir.getPath());
+                Log.w(Delta.TAG, "Finding latest apk in directory" + apkDir.getPath());
                 return findLatestApk(apks);
             }
         } else {

@@ -16,4 +16,5 @@
 #   public *;
 #}
 
--keep class org.byteam.delta.patch.** {*;}
+-keep class org.byteam.delta.patch.DeltaPatch {*;}
+-keep class org.byteam.delta.AppInfo {*;}

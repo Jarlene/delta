@@ -86,10 +86,10 @@ import static org.byteam.delta.Delta.TAG;
  */
 class Patcher {
     @SuppressWarnings("unchecked")  // Lots of conversions with generic types
-    public static void monkeyPatchApplication(@Nullable Context context,
-                                              @Nullable Application bootstrap,
-                                              @Nullable Application realApplication,
-                                              @Nullable String externalResourceFile) {
+    public static void patchApplication(@Nullable Context context,
+                                        @Nullable Application bootstrap,
+                                        @Nullable Application realApplication,
+                                        @Nullable String externalResourceFile) {
         /*
         The code seems to perform this:
         Application realApplication = the newly instantiated (in attachBaseContext) user app
@@ -272,16 +272,16 @@ class Patcher {
         }
     }
 
-    public static void monkeyPatchExistingResources(@Nullable Context context,
-                                                    @Nullable String externalResourceFile,
-                                                    @Nullable Collection<Activity> activities) {
+    public static void patchExistingResources(@Nullable Context context,
+                                              @Nullable String externalResourceFile,
+                                              @Nullable Collection<Activity> activities) {
         if (externalResourceFile == null) {
             return;
         }
 
         /*
         (Note: the resource directory is *also* inserted into the loadedApk in
-        monkeyPatchApplication)
+        patchApplication)
         The code seems to perform this:
         File externalResourceFile = <path to resources.ap_ or extracted directory>
 

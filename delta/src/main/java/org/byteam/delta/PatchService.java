@@ -25,7 +25,7 @@ public class PatchService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         Patch patch = intent.getParcelableExtra(PATCH_FLAG);
-        Intent patchReceiver = new Intent("org.byteam.delta.patch-receiver");
+        Intent patchReceiver = new Intent("org.byteam.delta.patch_receiver");
         if (patch != null) {
             int patchResult = DeltaPatch.patch(patch.getOldPath(), patch.getNewPath(),
                     patch.getPatchPath());

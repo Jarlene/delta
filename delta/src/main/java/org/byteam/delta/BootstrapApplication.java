@@ -18,12 +18,6 @@ public class BootstrapApplication extends Application {
     private String externalResourcePath;
     private Application realApplication;
 
-    public BootstrapApplication() {
-        Log.i(Delta.TAG, String.format(
-                "BootstrapApplication created. Android package is %s, real application class is %s.",
-                AppInfo.applicationId, AppInfo.applicationClass));
-    }
-
     private void createResources(Context context) {
         externalResourcePath = FileManager.getNewApk(context);
     }
@@ -64,25 +58,23 @@ public class BootstrapApplication extends Application {
     }
 
     private void createRealApplication() {
-        if (AppInfo.applicationClass != null) {
-            if (Log.isLoggable(Delta.TAG, Log.INFO)) {
-                Log.i(Delta.TAG, "About to create real application of class name = " +
-                        AppInfo.applicationClass);
-            }
-
+        String applicationClass;
+        try {
+            Class<?> appInfoClass = Class.forName("org.byteam.delta.AppInfo");
+            applicationClass = (String) appInfoClass.getDeclaredField("applicationClass").get(null);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        if (applicationClass != null) {
             try {
                 @SuppressWarnings("unchecked")
                 Class<? extends Application> realClass =
-                        (Class<? extends Application>) Class.forName(AppInfo.applicationClass);
-                if (Log.isLoggable(Delta.TAG, Log.INFO)) {
-                    Log.i(Delta.TAG, "Created delegate app class successfully : " + realClass +
-                            " with class loader " + realClass.getClassLoader());
-                }
+                        (Class<? extends Application>) Class.forName(applicationClass);
+                Log.i(Delta.TAG, "Created delegate app class successfully : " + realClass +
+                        " with class loader " + realClass.getClassLoader());
                 Constructor<? extends Application> constructor = realClass.getConstructor();
                 realApplication = constructor.newInstance();
-                if (Log.isLoggable(Delta.TAG, Log.INFO)) {
-                    Log.i(Delta.TAG, "Created real app instance successfully :" + realApplication);
-                }
+                Log.i(Delta.TAG, "Created real app instance successfully :" + realApplication);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
@@ -98,11 +90,11 @@ public class BootstrapApplication extends Application {
         setupClassLoaders(context, context.getCacheDir().getPath()); // TODO: 16/9/18 换cache目录
 
         createRealApplication();
-
         // This is called from ActivityThread#handleBindApplication() -> LoadedApk#makeApplication().
         // Application#mApplication is changed right after this call, so we cannot do the monkey
         // patching here. So just forward this method to the real Application instance.
         super.attachBaseContext(context);
+
 
         if (realApplication != null) {
             try {
@@ -118,10 +110,10 @@ public class BootstrapApplication extends Application {
 
     @Override
     public void onCreate() {
-        Patcher.monkeyPatchApplication(
+        Patcher.patchApplication(
                 BootstrapApplication.this, BootstrapApplication.this,
                 realApplication, externalResourcePath);
-        Patcher.monkeyPatchExistingResources(BootstrapApplication.this,
+        Patcher.patchExistingResources(BootstrapApplication.this,
                 externalResourcePath, null);
 
         super.onCreate();

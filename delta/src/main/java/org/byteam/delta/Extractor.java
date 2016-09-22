@@ -23,7 +23,7 @@ class Extractor {
      * @param sourceApk apk
      * @param destDir   destination dir
      */
-    public static void extractDex(File sourceApk, File destDir) throws IOException {
+    static void extractDex(File sourceApk, File destDir) throws IOException {
         if (sourceApk == null) {
             throw new NullPointerException("Source must not be null");
         }
@@ -42,7 +42,7 @@ class Extractor {
         OutputStream os = null;
         try {
             ZipFile apk = new ZipFile(sourceApk);
-            Enumeration<ZipEntry> entries = (Enumeration<ZipEntry>) apk.entries();
+            Enumeration<? extends ZipEntry> entries = apk.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
                 if (entry.getName().startsWith("classes") && entry.getName().endsWith(".dex")) {

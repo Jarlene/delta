@@ -18,14 +18,14 @@ class FileUtils {
     /**
      * Copies a file to a directory preserving the file date.
      */
-    public static void copyFileToDirectory(File srcFile, File destDir) throws IOException {
+    static void copyFileToDirectory(File srcFile, File destDir) throws IOException {
         copyFileToDirectory(srcFile, destDir, true);
     }
 
     /**
      * Copies a file to a directory optionally preserving the file date.
      */
-    public static void copyFileToDirectory(File srcFile, File destDir, boolean preserveFileDate) throws IOException {
+    static void copyFileToDirectory(File srcFile, File destDir, boolean preserveFileDate) throws IOException {
         if (destDir == null) {
             throw new NullPointerException("Destination must not be null");
         }
@@ -39,15 +39,15 @@ class FileUtils {
     /**
      * Copies a file to a new location preserving the file date.
      */
-    public static void copyFile(File srcFile, File destFile) throws IOException {
+    static void copyFile(File srcFile, File destFile) throws IOException {
         copyFile(srcFile, destFile, true);
     }
 
     /**
      * Copies a file to a new location.
      */
-    public static void copyFile(File srcFile, File destFile,
-                                boolean preserveFileDate) throws IOException {
+    static void copyFile(File srcFile, File destFile,
+                         boolean preserveFileDate) throws IOException {
         if (srcFile == null) {
             throw new NullPointerException("Source must not be null");
         }
@@ -110,7 +110,7 @@ class FileUtils {
     /**
      * Cleans a directory without deleting it.
      */
-    public static void cleanDirectory(File directory) throws IOException {
+    static void cleanDirectory(File directory) throws IOException {
         if (!directory.exists()) {
             String message = directory + " does not exist";
             throw new IllegalArgumentException(message);
@@ -150,7 +150,7 @@ class FileUtils {
      * (java.io.File methods returns a boolean)</li>
      * </ul>
      */
-    public static void forceDelete(File file) throws IOException {
+    static void forceDelete(File file) throws IOException {
         if (file.isDirectory()) {
             deleteDirectory(file);
         } else {
@@ -172,7 +172,7 @@ class FileUtils {
      * @param directory directory to delete
      * @throws IOException in case deletion is unsuccessful
      */
-    public static void deleteDirectory(File directory) throws IOException {
+    static void deleteDirectory(File directory) throws IOException {
         if (!directory.exists()) {
             return;
         }
