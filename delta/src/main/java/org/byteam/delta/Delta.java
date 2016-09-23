@@ -24,7 +24,7 @@ public class Delta {
         if (!isDebug(context)) {
             Log.w(TAG, "Running test code in release build type!");
         }
-        File[] patchs = Paths.getTmpDir(context).listFiles(new FileFilter() {
+        File[] patchs = Paths.getCacheDirectory(context).listFiles(new FileFilter() {
             @Override
             public boolean accept(File file) {
                 return file.isFile() && file.getName().endsWith(".apk");
@@ -168,8 +168,8 @@ public class Delta {
             if (Paths.getNewApkDirectory(context).exists()) {
                 FileUtils.cleanDirectory(Paths.getNewApkDirectory(context));
             }
-            if (Paths.getTmpDir(context).exists()) {
-                FileUtils.cleanDirectory(Paths.getTmpDir(context));
+            if (Paths.getCacheDirectory(context).exists()) {
+                FileUtils.cleanDirectory(Paths.getCacheDirectory(context));
             }
         } catch (IOException e) {
             Log.e(TAG, "Failed to clean patch file.", e);
@@ -181,11 +181,7 @@ public class Delta {
             Class<?> clazz = Class.forName(context.getPackageName() + ".BuildConfig");
             Object debug = clazz.getDeclaredField("DEBUG").get(null);
             return (boolean) debug;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return false;

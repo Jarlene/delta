@@ -95,7 +95,7 @@ class PatchTask extends DefaultTask {
     }
 
     private void copyPatchToDevice() {
-        String destDir = "/data/local/tmp/${mVariant.applicationId}_delta"
+        String destDir = "/data/data/${mVariant.applicationId}/cache/delta"
 
         String adbPath = project.android.adbExe.absolutePath
         Runtime.runtime.exec(

@@ -117,7 +117,7 @@ public class BootstrapApplication extends Application {
         if (isMainProcess(context)) {
             createResources(context);
             // Create a new classloader and set it as original classloader's parent.
-            setupClassLoaders(context, context.getCacheDir().getPath()); // TODO: 16/9/18 换cache目录
+            setupClassLoaders(context, Paths.getCodeCacheDirectory(context).getPath());
 
             createRealApplication();
         }

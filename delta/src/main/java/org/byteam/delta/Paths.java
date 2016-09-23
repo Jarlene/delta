@@ -1,7 +1,6 @@
 package org.byteam.delta;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
 
 import java.io.File;
 
@@ -11,12 +10,7 @@ import java.io.File;
  */
 final class Paths {
 
-    private static final String BASE_NAME = "delta";
-
-    /**
-     * Temp directory on the device
-     */
-    private static final String DEVICE_TEMP_DIR = "/data/local/tmp";
+    private static final String DELTA = "delta";
 
     /**
      * Name of folder to store the base.apk
@@ -39,45 +33,65 @@ final class Paths {
     private static final String LIB_DIRECTORY_NAME = "lib";
 
     /**
-     * @return /data/data/package/files/delta
+     * Name of folder to store odex
      */
-    private static File getBaseDirectory(@NonNull Context context) {
-        return new File(context.getFilesDir(), BASE_NAME);
+    private static final String CODE_CACHE_NAME = "code_cache";
+
+    /**
+     * /data/data/package/files/delta
+     */
+    private static File getBaseDirectory(Context context) {
+        return new File(context.getFilesDir(), DELTA);
     }
 
     /**
-     * @return /data/data/package/files/delta/base
+     * /data/data/package/files/delta/base
      */
-    public static File getBaseApkDirectory(@NonNull Context context) {
+    public static File getBaseApkDirectory(Context context) {
         return new File(getBaseDirectory(context), BASE_APK_DIRECTORY_NAME);
     }
 
     /**
-     * @return /data/data/package/files/delta/new
+     * /data/data/package/files/delta/new
      */
-    public static File getNewApkDirectory(@NonNull Context context) {
+    public static File getNewApkDirectory(Context context) {
         return new File(getBaseDirectory(context), NEW_APK_DIRECTORY_NAME);
     }
 
     /**
-     * @return /data/data/package/files/delta/dex
+     * /data/data/package/files/delta/dex
      */
-    public static File getDexDirectory(@NonNull Context context) {
+    public static File getDexDirectory(Context context) {
         return new File(getBaseDirectory(context), DEX_DIRECTORY_NAME);
     }
 
     /**
-     * @return /data/data/package/lib
+     * /data/data/package/lib
      */
-    public static File getNativeLibraryFolder(@NonNull Context context) {
+    public static File getNativeLibraryDirectory(Context context) {
         return new File(context.getFilesDir(), LIB_DIRECTORY_NAME);
     }
 
     /**
-     * @return /data/local/tmp/package_delta
+     * /data/data/package/cache/delta
      */
-    public static File getTmpDir(@NonNull Context context) {
-        return new File(DEVICE_TEMP_DIR, context.getPackageName() + "_" + BASE_NAME);
+    public static File getCacheDirectory(Context context) {
+        return new File(context.getCacheDir(), DELTA);
+    }
+
+    /**
+     * /data/data/package/code_cache
+     * or
+     * /data/data/package/files/code_cache
+     */
+    public static File getCodeCacheDirectory(Context context) {
+        File cache = new File(context.getApplicationInfo().dataDir, CODE_CACHE_NAME);
+        cache.mkdirs();
+        if (!cache.isDirectory()) {
+            cache = new File(context.getFilesDir(), CODE_CACHE_NAME);
+            cache.mkdirs();
+        }
+        return cache;
     }
 
 }
