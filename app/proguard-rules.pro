@@ -15,3 +15,6 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+-keep class org.byteam.delta.AppInfo {*;}
+-keep class org.byteam.delta.sample.App {*;}
