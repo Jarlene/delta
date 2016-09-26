@@ -3,6 +3,7 @@ package org.byteam.delta.sample;
 import android.os.Bundle;
 import android.os.Process;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -12,6 +13,7 @@ import org.byteam.delta.Delta;
 import org.byteam.delta.PatchListener;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    private final String TAG = "delta_demo";
 
     private Button mFixBtn, mCleanBtn;
     private TextView mTextView;
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     } else {
                         Toast.makeText(getApplicationContext(), "补丁应用失败:" + message,
                                 Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "失败: " + message);
                     }
                 }
             });
