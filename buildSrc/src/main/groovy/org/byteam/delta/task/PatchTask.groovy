@@ -30,8 +30,6 @@ class PatchTask extends DefaultTask {
 
     File mPatchDir
 
-    boolean patchResult
-
     @TaskAction
     void patch() {
         if (checkFiles()) {
@@ -41,7 +39,7 @@ class PatchTask extends DefaultTask {
 
             executeDiff()
 
-            if (patchResult && pushPatchToDevice) {
+            if (pushPatchToDevice) {
                 copyPatchToDevice()
             }
         } else {
@@ -84,7 +82,6 @@ class PatchTask extends DefaultTask {
                 int result = patch.waitFor()
                 if (result == 0) {
                     println("Patch successful")
-                    patchResult = true
                 } else {
                     println("Generate patch files failed, please see 'patch.log' for more info.")
                     FileUtils.writeStringToFile(new File(mPatchDir, 'patch.log'),
@@ -96,16 +93,19 @@ class PatchTask extends DefaultTask {
 
     private void copyPatchToDevice() {
         String destDir = "/data/data/${mVariant.applicationId}/cache/delta"
-
         String adbPath = project.android.adbExe.absolutePath
-        Runtime.runtime.exec(
-                "${adbPath} shell;" +
-                        "su;" +
-                        "rm -rf ${destDir};" +
-                        "mkdir -p ${destDir};" +
-                        "exit;")
-        mPatchDir.eachFileMatch(FileType.FILES, ~/.+\.apk/) { apk ->
-            Runtime.runtime.exec("${adbPath} push ${apk.absolutePath} ${destDir}/${apk.name}")
+        try {
+            Runtime.runtime.exec(
+                    "${adbPath} shell;" +
+                            "su;" +
+                            "rm -r ${destDir};" +
+                            "mkdir -p ${destDir};" +
+                            "exit;")
+            mPatchDir.eachFileMatch(FileType.FILES, ~/.+\.apk/) { apk ->
+                Runtime.runtime.exec("${adbPath} push ${apk.absolutePath} ${destDir}/${apk.name}")
+            }
+        } catch (IOException e) {
+            e.printStackTrace()
         }
     }
 

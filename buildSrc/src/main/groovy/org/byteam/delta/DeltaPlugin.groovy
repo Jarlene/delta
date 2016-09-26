@@ -36,7 +36,6 @@ import javax.xml.transform.stream.StreamResult
 
 import static com.android.SdkConstants.*
 
-
 /**
  * @Author: chenenyu
  * @Created: 16/8/17 11:03.
@@ -171,7 +170,8 @@ class DeltaPlugin implements Plugin<Project> {
                         }
                     }
                     if (applicationId && applicationClass) {
-                        writeAppInfoClass(project, variant, applicationId, applicationClass)
+                        addProguardRules(variant, applicationClass)
+                        writeAppInfoClass(project, applicationId, applicationClass)
                     } else {
                         throw new NullPointerException("Null applicationId or applicationClass")
                     }
@@ -182,9 +182,22 @@ class DeltaPlugin implements Plugin<Project> {
         }
     }
 
-    private void writeAppInfoClass(Project project, BaseVariant variant, String applicationId, String applicationClass) {
+    private synchronized void addProguardRules(BaseVariant variant, String applicationClass) {
+        Collection<File> proguards = variant.buildType.proguardFiles
+        if (proguards != null && proguards.size() > 0) {
+            File proguard = proguards.last()
+            String rule = "-keep class ${applicationClass} {*;}"
+            if (!proguard.text.contains(rule)) {
+                FileUtils.writeStringToFile(proguard, "\n${rule}", Charsets.UTF_8, true)
+            }
+        }
+    }
+
+    private synchronized void writeAppInfoClass(Project project, String applicationId,
+                                                String applicationClass) {
         // Generate AppInfo.java
-        File appInfoFile = project.file("${project.buildDir.absolutePath}/generated/source/delta/org/byteam/delta/AppInfo.java")
+        File appInfoFile = project.file(
+                "${project.buildDir.absolutePath}/generated/source/delta/org/byteam/delta/AppInfo.java")
         def template = new AppInfoTemplate()
         template.applicationId = applicationId
         template.applicationClass = applicationClass
