@@ -93,6 +93,7 @@ class FileUtils {
             while (-1 != (n = fis.read(buffer))) {
                 fos.write(buffer, 0, n);
             }
+            fos.flush();
         } finally {
             IOUtils.closeQuietly(fos);
             IOUtils.closeQuietly(fis);
